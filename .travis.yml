@@ -83,6 +83,9 @@ addons:
     paths:
     - "index.html"
     - "Firmware.zip"
+    target-paths:
+    - ""
+    - "$TRAVIS_BRANCH/$TRAVIS_BUILD_ID"
     key:
       secure: j4y9x9KXUiarGrnpFBLPIkEKIH8X6oSRUO61TwxTOamsE0eEKnIaCz1Xq83q7DoqzomHBD3qXAFPV9dhLr1zdKEPJDIyV45GVD4ClIQIzh/P3Uc7kDNxKzdmxY12SH6D0orMpC4tCf1sNK7ETepltWfcnjaDk1Rjs9+TVY7LuzM=
     secret:
@@ -90,7 +93,6 @@ addons:
     bucket: px4-travis
     region: us-east-1
     endpoint: s3-website-us-east-1.amazonaws.com
-    target-paths: $TRAVIS_BRANCH/$TRAVIS_BUILD_ID
     debug: true
 
 notifications:
