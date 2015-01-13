@@ -90,7 +90,7 @@ addons:
     bucket: px4-travis
     region: us-east-1
     endpoint: s3-website-us-east-1.amazonaws.com
-    upload-dir: $TRAVIS_BRANCH/$TRAVIS_BUILD_ID
+    target-paths: $TRAVIS_BRANCH/$TRAVIS_BUILD_ID
     debug: true
 
 notifications:
