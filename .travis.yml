@@ -81,6 +81,7 @@ deploy:
 addons:
   artifacts:
     paths:
+    - "index.html"
     - "Firmware.zip"
     key:
       secure: j4y9x9KXUiarGrnpFBLPIkEKIH8X6oSRUO61TwxTOamsE0eEKnIaCz1Xq83q7DoqzomHBD3qXAFPV9dhLr1zdKEPJDIyV45GVD4ClIQIzh/P3Uc7kDNxKzdmxY12SH6D0orMpC4tCf1sNK7ETepltWfcnjaDk1Rjs9+TVY7LuzM=
@@ -89,6 +90,8 @@ addons:
     bucket: px4-travis
     region: us-east-1
     endpoint: s3-website-us-east-1.amazonaws.com
+    upload-dir: $TRAVIS_BRANCH/$TRAVIS_BUILD_ID
+    debug: true
 
 notifications:
   webhooks:
