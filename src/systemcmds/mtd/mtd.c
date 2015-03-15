@@ -115,18 +115,17 @@ enum {
 #ifdef CONFIG_MTD_RAMTRON
 static char *partition_names_default[] = {"/fs/mtd_params", "/fs/mtd_waypoints"};
 static unsigned int parition_type[] = {MTD_PARTITION_TYPE_CHAR, MTD_PARTITION_TYPE_CHAR};
+
 #elif CONFIG_MTD_W25
 static char *partition_names_default[] = {"/fs/mtd_params", "/fs/mtd_waypoints", "/fs/microsd"};
 static unsigned int parition_type[] = {MTD_PARTITION_TYPE_CHAR, MTD_PARTITION_TYPE_CHAR, MTD_PARTITION_TYPE_FAT};
-#define PARTITION_SIZES DEFINED
 // Start of partitions defined in 1k increments
 static unsigned int partition_map[] = {0,128,256};
+#define PARTITION_SIZES
+
 #endif
 static const int n_partitions_default = sizeof(partition_names_default) / sizeof(partition_names_default[0]);
 
-#ifndef PARTITION_SIZES
-#define PARTITION_SIZES EQUAL
-#endif
 
 static void
 mtd_status(void)
@@ -352,14 +351,14 @@ mtd_start(char *partition_names[], unsigned n_partitions)
 	unsigned offset;
 	unsigned i;
 
-#if(PARTITION_SIZES == DEFINED)
+#ifdef PARTITION_SIZES
 	unsigned part_sizes[n_partitions];
 	ret = mtd_get_partition_sizes(part_sizes, &blocksize);
 #endif //(PARTITION_SIZES != DEFINED)
 
 	for (offset = 0, i = 0; i < n_partitions; offset += nblocks, i++) {
 
-#if(PARTITION_SIZES == DEFINED)
+#ifdef PARTITION_SIZES
 		nblocks = part_sizes[i];
 #endif //(PARTITION_SIZES != DEFINED)
 
@@ -482,7 +481,7 @@ static ssize_t mtd_get_partition_size(void)
 }
 
 
-#if CONFIG_MTD_W25
+#ifdef PARTITION_SIZES
 /*
   get partition sizes in bytes for partitions with defined boundaries
 
@@ -531,10 +530,10 @@ static int mtd_get_partition_sizes(unsigned *blocks, unsigned long *blocksize)
 	return 0;
 }
 
-#endif //CONFIG_MTD_W25
+#endif //#ifdef PARTITION_SIZES
 
 
-#if(PARTITION_SIZES == DEFINED)
+#ifdef PARTITION_SIZES
 
 void mtd_print_info(void)
 {
