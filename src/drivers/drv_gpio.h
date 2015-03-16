@@ -140,7 +140,7 @@
 
 #if !defined(CONFIG_ARCH_BOARD_PX4IO_V1) && !defined(CONFIG_ARCH_BOARD_PX4IO_V2)  && \
 	!defined(CONFIG_ARCH_BOARD_PX4FMU_V1) && !defined(CONFIG_ARCH_BOARD_PX4FMU_V2) && \
-	!defined(CONFIG_ARCH_BOARD_AEROCORE)
+	!defined(CONFIG_ARCH_BOARD_AEROCORE) && !defined(CONFIG_ARCH_BOARD_UNODE)
 # error No CONFIG_ARCH_BOARD_xxxx set
 #endif
 /*
