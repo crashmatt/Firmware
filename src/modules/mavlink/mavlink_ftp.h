@@ -146,6 +146,7 @@ private:
 
 	ErrorCode	_workList(PayloadHeader *payload);
 	ErrorCode	_workOpen(PayloadHeader *payload, int oflag);
+	ErrorCode 	_workCreate(PayloadHeader* payload);
 	ErrorCode	_workRead(PayloadHeader *payload);
 	ErrorCode	_workWrite(PayloadHeader *payload);
 	ErrorCode	_workTerminate(PayloadHeader *payload);

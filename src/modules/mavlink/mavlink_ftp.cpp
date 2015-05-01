@@ -186,7 +186,7 @@ MavlinkFTP::_process_request(Request *req)
 		break;
 
 	case kCmdCreateFile:
-		errorCode = _workOpen(payload, O_CREAT | O_EXCL | O_WRONLY);
+		errorCode = _workCreate(payload);
 		break;
 
 	case kCmdOpenFileWO:
@@ -434,6 +434,7 @@ MavlinkFTP::_workOpen(PayloadHeader* payload, int oflag)
 		else
 			st.st_size = 0;
 	}
+
 	fileSize = st.st_size;
 
 	int fd = ::open(filename, oflag);
@@ -446,6 +447,36 @@ MavlinkFTP::_workOpen(PayloadHeader* payload, int oflag)
 	payload->size = sizeof(uint32_t);
 	*((uint32_t*)payload->data) = fileSize;
 
+	return kErrNone;
+}
+
+/// @brief Responds to an Create file command
+MavlinkFTP::ErrorCode
+MavlinkFTP::_workCreate(PayloadHeader* payload)
+{
+	int session_index = _find_unused_session();
+	if (session_index < 0) {
+		warnx("FTP: Open failed - out of sessions\n");
+		return kErrNoSessionsAvailable;
+	}
+
+	char *filename = _data_as_cstring(payload);
+
+	if(strcmp(filename,"") == 0)
+		return kErrFail;
+
+	struct stat st;
+	if (stat(filename, &st) == 0) {
+		return kErrFailErrno;
+	}
+
+	int fd = ::open(filename, O_CREAT | O_EXCL | O_WRONLY);
+	if (fd < 0) {
+		return kErrFailErrno;
+	}
+	_session_fds[session_index] = fd;
+
+	payload->session = session_index;
 	return kErrNone;
 }
 
