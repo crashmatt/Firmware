@@ -246,6 +246,17 @@ private:
 
 	perf_counter_t	_loop_perf;			/**< loop performance counter */
 
+	enum{
+		_SENSORS_INIT_FAILED_BARO 		= 0x01,
+		_SENSORS_INIT_FAILED_ACCEL 		= 0x02,
+		_SENSORS_INIT_FAILED_GYRO 		= 0x04,
+		_SENSORS_INIT_FAILED_MAG 		= 0x08,
+		_SENSORS_INIT_FAILED_ADC 		= 0x10,
+		_SENSORS_INIT_FAILED_ALL		= 0x1F
+	};
+
+	int 	_sensor_init_failures;		/**< track which sensors have failed to init */
+
 	struct rc_channels_s _rc;			/**< r/c channel data */
 	struct battery_status_s _battery_status;	/**< battery status */
 	struct baro_report _barometer;			/**< barometer data */
@@ -537,6 +548,8 @@ Sensors::Sensors() :
 	_battery_discharged(0),
 	_battery_current_timestamp(0)
 {
+	_sensor_init_failures = 0;
+
 	memset(&_rc, 0, sizeof(_rc));
 	memset(&_diff_pres, 0, sizeof(_diff_pres));
 	memset(&_rc_parameter_map, 0, sizeof(_rc_parameter_map));
@@ -2075,32 +2088,36 @@ Sensors::task_main()
 	ret = accel_init();
 
 	if (ret) {
-		goto exit_immediate;
+		_sensor_init_failures |= _SENSORS_INIT_FAILED_ACCEL;
 	}
 
 	ret = gyro_init();
 
 	if (ret) {
-		goto exit_immediate;
+		_sensor_init_failures |= _SENSORS_INIT_FAILED_GYRO;
 	}
 
 	ret = mag_init();
 
 	if (ret) {
-		goto exit_immediate;
+		_sensor_init_failures |= _SENSORS_INIT_FAILED_MAG;
 	}
 
 	ret = baro_init();
 
 	if (ret) {
-		goto exit_immediate;
+		_sensor_init_failures |= _SENSORS_INIT_FAILED_BARO;
 	}
 
 	ret = adc_init();
 
 	if (ret) {
-		goto exit_immediate;
+		_sensor_init_failures |= _SENSORS_INIT_FAILED_ACCEL;
 	}
+
+	if(_sensor_init_failures == _SENSORS_INIT_FAILED_ALL){
+		goto exit_immediate;
+	};
 
 	/*
 	 * do subscriptions
