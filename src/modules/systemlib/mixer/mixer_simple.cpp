@@ -61,15 +61,21 @@ SimpleMixer::SimpleMixer(ControlCallback control_cb,
 			 uintptr_t cb_handle,
 			 mixer_simple_s *mixinfo) :
 	Mixer(control_cb, cb_handle),
-	_info(mixinfo)
+	_pinfo(mixinfo)
 {
 }
 
 SimpleMixer::~SimpleMixer()
 {
-	if (_info != nullptr) {
-		free(_info);
+	if (_pinfo != nullptr) {
+		free(_pinfo);
 	}
+}
+
+unsigned SimpleMixer::set_trim(float trim)
+{
+	_pinfo->output_scaler.offset = trim;
+	return 1;
 }
 
 int
@@ -155,6 +161,11 @@ SimpleMixer::from_text(Mixer::ControlCallback control_cb, uintptr_t cb_handle, c
 	int used;
 	const char *end = buf + buflen;
 
+	/* enforce that the mixer ends with a new line */
+	if (!string_well_formed(buf, buflen)) {
+		return nullptr;
+	}
+
 	/* get the base info for the mixer */
 	if (sscanf(buf, "M: %u%n", &inputs, &used) != 1) {
 		debug("simple parse failed on '%s'", buf);
@@ -211,6 +222,65 @@ out:
 
 	return sm;
 }
+
+#if defined(MIXER_CONFIGURATION)
+#if !defined(MIXER_REMOTE)
+int
+SimpleMixer::to_text(char *buf, unsigned &buflen)
+{
+	char *bufpos = buf;
+	unsigned remaining = buflen;
+
+	int written = snprintf(bufpos, remaining, "M: %u\n", _pinfo->control_count);
+	bufpos += written;
+	remaining -= written;
+
+	if (remaining < 1) {
+		return -1;
+	}
+
+	mixer_scaler_s *scaler = &_pinfo->output_scaler;
+	written = snprintf(bufpos, remaining, "O: %d %d %d %d %d\n",
+			   (int)(scaler->negative_scale * 10000.0f),
+			   (int)(scaler->positive_scale * 10000.0f),
+			   (int)(scaler->offset * 10000.0f),
+			   (int)(scaler->min_output * 10000.0f),
+			   (int)(scaler->max_output * 10000.0f)
+			  );
+	bufpos += written;
+	remaining -= written;
+
+	if (remaining < 1) {
+		return -1;
+	}
+
+
+	for (unsigned i = 0; i < _pinfo->control_count; i++) {
+
+		scaler = &_pinfo->controls[i].scaler;
+
+		written = snprintf(bufpos, remaining, "S: %u %u %d %d %d %d %d\n",
+				   _pinfo->controls[i].control_group,
+				   _pinfo->controls[i].control_index,
+				   (int)(scaler->negative_scale * 10000.0f),
+				   (int)(scaler->positive_scale * 10000.0f),
+				   (int)(scaler->offset * 10000.0f),
+				   (int)(scaler->min_output * 10000.0f),
+				   (int)(scaler->max_output * 10000.0f)
+				  );
+		bufpos += written;
+		remaining -= written;
+
+		if (remaining < 1) {
+			return -1;
+		}
+	}
+
+	buflen = bufpos - buf;
+	return 0;
+}
+#endif //MIXER_REMOTE
+#endif //MIXER_CONFIGURATION
 
 SimpleMixer *
 SimpleMixer::pwm_input(Mixer::ControlCallback control_cb, uintptr_t cb_handle, unsigned input, uint16_t min,
@@ -279,7 +349,7 @@ SimpleMixer::mix(float *outputs, unsigned space, uint16_t *status_reg)
 {
 	float		sum = 0.0f;
 
-	if (_info == nullptr) {
+	if (_pinfo == nullptr) {
 		return 0;
 	}
 
@@ -287,26 +357,32 @@ SimpleMixer::mix(float *outputs, unsigned space, uint16_t *status_reg)
 		return 0;
 	}
 
-	for (unsigned i = 0; i < _info->control_count; i++) {
+	for (unsigned i = 0; i < _pinfo->control_count; i++) {
 		float input;
 
 		_control_cb(_cb_handle,
-			    _info->controls[i].control_group,
-			    _info->controls[i].control_index,
+			    _pinfo->controls[i].control_group,
+			    _pinfo->controls[i].control_index,
 			    input);
 
-		sum += scale(_info->controls[i].scaler, input);
+		sum += scale(_pinfo->controls[i].scaler, input);
 	}
 
-	*outputs = scale(_info->output_scaler, sum);
+	*outputs = scale(_pinfo->output_scaler, sum);
 	return 1;
+}
+
+uint16_t
+SimpleMixer::get_saturation_status()
+{
+	return 0;
 }
 
 void
 SimpleMixer::groups_required(uint32_t &groups)
 {
-	for (unsigned i = 0; i < _info->control_count; i++) {
-		groups |= 1 << _info->controls[i].control_group;
+	for (unsigned i = 0; i < _pinfo->control_count; i++) {
+		groups |= 1 << _pinfo->controls[i].control_group;
 	}
 }
 
@@ -318,30 +394,30 @@ SimpleMixer::check()
 
 	/* sanity that presumes that a mixer includes a control no more than once */
 	/* max of 32 groups due to groups_required API */
-	if (_info->control_count > 32) {
+	if (_pinfo->control_count > 32) {
 		return -2;
 	}
 
 	/* validate the output scaler */
-	ret = scale_check(_info->output_scaler);
+	ret = scale_check(_pinfo->output_scaler);
 
 	if (ret != 0) {
 		return ret;
 	}
 
 	/* validate input scalers */
-	for (unsigned i = 0; i < _info->control_count; i++) {
+	for (unsigned i = 0; i < _pinfo->control_count; i++) {
 
 		/* verify that we can fetch the control */
 		if (_control_cb(_cb_handle,
-				_info->controls[i].control_group,
-				_info->controls[i].control_index,
+				_pinfo->controls[i].control_group,
+				_pinfo->controls[i].control_index,
 				junk) != 0) {
 			return -3;
 		}
 
 		/* validate the scaler */
-		ret = scale_check(_info->controls[i].scaler);
+		ret = scale_check(_pinfo->controls[i].scaler);
 
 		if (ret != 0) {
 			return (10 * i + ret);
@@ -350,3 +426,144 @@ SimpleMixer::check()
 
 	return 0;
 }
+
+#if defined(MIXER_CONFIGURATION)
+MIXER_TYPES
+SimpleMixer::get_mixer_type(uint16_t submix_index)
+{
+	if (_pinfo == nullptr) { return MIXER_TYPE_NONE; }
+
+	if (submix_index == 0) {
+		return MIXER_TYPE_SIMPLE;
+
+	} else {
+		if (submix_index > _pinfo->control_count) { return MIXER_TYPE_NONE; }
+
+		return MIXER_TYPE_SIMPLE_INPUT;
+	}
+}
+
+
+signed
+SimpleMixer::count_submixers(void)
+{
+	if (_pinfo == nullptr) { return 0; }
+
+	return _pinfo->control_count;
+}
+
+float
+SimpleMixer::get_parameter(uint16_t index, uint16_t submix_index)
+{
+	if (_pinfo == nullptr) { return 0.0; }
+
+	if (submix_index == 0) {
+		switch (index) {
+		case 0:
+			return _pinfo->output_scaler.negative_scale;
+			break;
+
+		case 1:
+			return _pinfo->output_scaler.positive_scale;
+			break;
+
+		case 2:
+			return _pinfo->output_scaler.offset;
+			break;
+
+		case 3:
+			return _pinfo->output_scaler.min_output;
+			break;
+
+		case 4:
+			return _pinfo->output_scaler.max_output;
+			break;
+		}
+
+	} else if (submix_index <= _pinfo->control_count) {
+		switch (index) {
+		case 0:
+			return _pinfo->controls[submix_index - 1].scaler.negative_scale;
+			break;
+
+		case 1:
+			return _pinfo->controls[submix_index - 1].scaler.positive_scale;
+			break;
+
+		case 2:
+			return _pinfo->controls[submix_index - 1].scaler.offset;
+			break;
+
+		case 3:
+			return _pinfo->controls[submix_index - 1].scaler.min_output;
+			break;
+
+		case 4:
+			return _pinfo->controls[submix_index - 1].scaler.max_output;
+			break;
+		}
+	}
+
+	return 0.0;
+}
+
+int16_t
+SimpleMixer::set_parameter(uint16_t index, float value, uint16_t submix_index)
+{
+	if (_pinfo == nullptr) { return -1; }
+
+	if (submix_index == 0) {
+		switch (index) {
+		case 0:
+			_pinfo->output_scaler.negative_scale = value;
+			break;
+
+		case 1:
+			_pinfo->output_scaler.positive_scale = value;
+			break;
+
+		case 2:
+			_pinfo->output_scaler.offset = value;
+			break;
+
+		case 3:
+			_pinfo->output_scaler.min_output = value;
+			break;
+
+		case 4:
+			_pinfo->output_scaler.max_output = value;
+			break;
+
+		default:
+			return -1;
+			break;
+		}
+
+	} else if (submix_index <= _pinfo->control_count) {
+		switch (index) {
+		case 0:
+			_pinfo->controls[submix_index - 1].scaler.negative_scale = value;
+			break;
+
+		case 1:
+			_pinfo->controls[submix_index - 1].scaler.positive_scale = value;
+			break;
+
+		case 2:
+			_pinfo->controls[submix_index - 1].scaler.offset = value;
+			break;
+
+		case 3:
+			_pinfo->controls[submix_index - 1].scaler.min_output = value;
+			break;
+
+		case 4:
+			_pinfo->controls[submix_index - 1].scaler.max_output = value;
+			break;
+		}
+	}
+
+	return 0;
+}
+
+#endif //defined(MIXER_CONFIGURATION)
