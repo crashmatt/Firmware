@@ -84,36 +84,6 @@ MixerGroup::add_mixer(Mixer *mixer)
 	mixer->_next = nullptr;
 }
 
-#if defined(MIXER_CONFIGURATION)
-void
-MixerGroup::add_mixer_from_data(MIXER_TYPES mixtype, void *mixinfo)
-{
-	Mixer *m = nullptr;
-
-	switch (static_cast<int>(mixtype)) {
-	case static_cast<int>(MIXER_TYPE_NULL):
-		break;
-
-	case static_cast<int>(MIXER_TYPE_SIMPLE):
-		m = (Mixer *) new SimpleMixer(_control_cb, _cb_handle, (mixer_simple_s *) mixinfo);
-		break;
-
-	case static_cast<int>(MIXER_TYPE_MULTIROTOR):
-		m = (Mixer *) new MultirotorMixer(_control_cb, _cb_handle, (mixer_multi_s *) mixinfo);
-		break;
-
-	case static_cast<int>(MIXER_TYPE_HELICOPTER):
-		m = (Mixer *) new HelicopterMixer(_control_cb, _cb_handle, (mixer_heli_s *) mixinfo);
-		break;
-	}
-
-	if (m != nullptr) {
-		add_mixer(m);
-	}
-
-}
-#endif //MIXER_CONFIGURATION
-
 void
 MixerGroup::reset()
 {
@@ -253,6 +223,8 @@ MixerGroup::load_from_buf(const char *buf, unsigned &buflen)
 			m = SimpleMixer::from_text(_control_cb, _cb_handle, p, resid);
 			break;
 
+#ifndef ARDUPILOT_BUILD
+
 		case 'R':
 			m = MultirotorMixer::from_text(_control_cb, _cb_handle, p, resid);
 			break;
@@ -260,7 +232,7 @@ MixerGroup::load_from_buf(const char *buf, unsigned &buflen)
 		case 'H':
 			m = HelicopterMixer::from_text(_control_cb, _cb_handle, p, resid);
 			break;
-
+#endif
 		default:
 			/* it's probably junk or whitespace, skip a byte and retry */
 			buflen--;

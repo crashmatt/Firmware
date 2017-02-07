@@ -230,7 +230,7 @@ public:
 	 *
 	 * @return              A type enumeration for this mixer
 	 */
-	virtual MIXER_TYPES     get_mixer_type(uint16_t submix_index) {return MIXER_TYPE_NONE;}
+	virtual MIXER_TYPES     get_mixer_type(uint16_t submix_index) {return MIXER_TYPES_NONE;}
 
 	/**
 	 * Get list of Mixer parameters
@@ -412,7 +412,6 @@ public:
 	 * @param[in]  mixer_type   mixer type from enumeration
 	 * @param[in]  mixinfo      mixer information in structure according to mixer type.
 	 */
-	void            add_mixer_from_data(MIXER_TYPES mixtype, void *mixinfo);
 #endif //defined(MIXER_CONFIGURATION)
 
 	/**
