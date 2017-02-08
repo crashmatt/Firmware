@@ -323,7 +323,7 @@ MixerGroup::get_mixer_type_from_index(uint16_t mix_index, uint16_t submix_index)
 		index++;
 	}
 
-	return MIXER_TYPE_NONE;
+	return MIXER_TYPES_NONE;
 }
 
 signed

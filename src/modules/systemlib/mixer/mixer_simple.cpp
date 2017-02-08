@@ -431,13 +431,13 @@ SimpleMixer::check()
 MIXER_TYPES
 SimpleMixer::get_mixer_type(uint16_t submix_index)
 {
-	if (_pinfo == nullptr) { return MIXER_TYPE_NONE; }
+	if (_pinfo == nullptr) { return MIXER_TYPES_NONE; }
 
 	if (submix_index == 0) {
 		return MIXER_TYPES_SIMPLE;
 
 	} else {
-		if (submix_index > _pinfo->control_count) { return MIXER_TYPE_NONE; }
+		if (submix_index > _pinfo->control_count) { return MIXER_TYPES_NONE; }
 
 		return MIXER_TYPES_SIMPLE_INPUT;
 	}
