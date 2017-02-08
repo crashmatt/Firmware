@@ -58,6 +58,8 @@ static int	registers_set_one(uint8_t page, uint8_t offset, uint16_t value);
 static void	pwm_configure_rates(uint16_t map, uint16_t defaultrate, uint16_t altrate);
 static void	pwm_configure_clock(uint16_t map, uint16_t clock_MHz);
 
+bool update_mixer_param = false;
+
 /**
  * PAGE 0
  *
@@ -191,6 +193,13 @@ volatile uint16_t	r_page_setup[] = {
 	[PX4IO_P_SETUP_IGNORE_SAFETY] = 0,
 	[PX4IO_P_SETUP_HEATER_DUTY_CYCLE] = PX4IO_HEATER_DISABLE,
 	[PX4IO_P_SETUP_PWM_ALTCLOCK]		= 1,
+#if defined(MIXER_CONFIGURATION)
+	[PX4IO_P_SETUP_PARAMETER_MIXER_INDEX] = 0,
+	[PX4IO_P_SETUP_PARAMETER_MIXER_SUB_INDEX] = 0,
+	[PX4IO_P_SETUP_PARAMETER_INDEX] = 0,
+	[PX4IO_P_SETUP_PARAMETER] = 0,
+	[PX4IO_P_SETUP_PARAMETER_HIGH] = 0
+#endif //MIXER_CONFIGURATION
 };
 
 #ifdef CONFIG_ARCH_BOARD_PX4IO_V2
@@ -765,6 +774,20 @@ registers_set_one(uint8_t page, uint8_t offset, uint16_t value)
 		case PX4IO_P_SETUP_HEATER_DUTY_CYCLE:
 			r_page_setup[offset] = value;
 			break;
+
+#if defined(MIXER_CONFIGURATION)
+		case PX4IO_P_SETUP_PARAMETER_MIXER_INDEX:
+		case PX4IO_P_SETUP_PARAMETER_MIXER_SUB_INDEX:
+		case PX4IO_P_SETUP_PARAMETER_INDEX:
+		case PX4IO_P_SETUP_PARAMETER:
+			r_page_setup[offset] = value;
+			break;
+
+		case PX4IO_P_SETUP_PARAMETER_HIGH:
+			r_page_setup[PX4IO_P_SETUP_PARAMETER_HIGH] = value;
+			update_mixer_param = true;
+			break;
+#endif //MIXER_CONFIGURATION
 
 		default:
 			return -1;

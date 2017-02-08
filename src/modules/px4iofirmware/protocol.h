@@ -249,6 +249,13 @@ enum {							/* DSM bind states */
 #define PX4IO_P_SETUP_HEATER_DUTY_CYCLE		21	/**< control the heater pin, setting duty cycle */
 #define PX4IO_P_SETUP_PWM_ALTCLOCK			22  /* alt channel PWM clock in MHz */
 
+#define PX4IO_P_SETUP_PARAMETER_MIXER_INDEX     23      /**< Index of the mixer for parameter access */
+#define PX4IO_P_SETUP_PARAMETER_MIXER_SUB_INDEX 24      /**< Index of the mixer for parameter access */
+#define PX4IO_P_SETUP_PARAMETER_INDEX           25      /**< Mixer parameter index */
+#define PX4IO_P_SETUP_PARAMETER                 26      /**< Mixer parameter at mixer index and parameter index*/
+#define PX4IO_P_SETUP_PARAMETER_HIGH            27      /**< High word of 32bit mixer parameter*/
+
+
 /* autopilot control values, -10000..10000 */
 #define PX4IO_PAGE_CONTROLS			51	/**< actuator control groups, one after the other, 8 wide */
 #define PX4IO_P_CONTROLS_GROUP_0		(PX4IO_PROTOCOL_MAX_CONTROL_COUNT * 0)	/**< 0..PX4IO_PROTOCOL_MAX_CONTROL_COUNT - 1 */

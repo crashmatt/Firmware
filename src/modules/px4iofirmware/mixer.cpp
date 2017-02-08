@@ -334,7 +334,28 @@ mixer_tick(void)
 		if (r_setup_features & PX4IO_P_SETUP_FEATURES_SBUS2_OUT) {
 			sbus2_output(_sbus_fd, r_page_servo_disarmed, PX4IO_ACTUATOR_COUNT);
 		}
-    }
+	}
+
+#if defined(MIXER_CONFIGURATION)
+
+	if (update_mixer_param) {
+		union {
+			uint16_t words[2];
+			float	 value;
+		} unpack;
+
+		unpack.words[0] = r_page_setup[PX4IO_P_SETUP_PARAMETER];
+		unpack.words[1] = r_page_setup[PX4IO_P_SETUP_PARAMETER_HIGH];
+
+		mixer_group.set_mixer_param(r_page_setup[PX4IO_P_SETUP_PARAMETER_MIXER_INDEX],
+					    r_page_setup[PX4IO_P_SETUP_PARAMETER_INDEX],
+					    unpack.value,
+					    r_page_setup[PX4IO_P_SETUP_PARAMETER_MIXER_SUB_INDEX]);
+		update_mixer_param = false;
+	}
+
+#endif //MIXER_CONFIGURATION			r_mixer_crc_ok = 0;
+
 }
 
 static int
@@ -549,4 +570,23 @@ mixer_set_failsafe()
 		r_page_servo_failsafe[i] = 0;
 	}
 
+#if defined(MIXER_CONFIGURATION)
+
+	if (update_mixer_param) {
+		union {
+			uint16_t words[2];
+			float	 value;
+		} unpack;
+
+		unpack.words[0] = r_page_setup[PX4IO_P_SETUP_PARAMETER];
+		unpack.words[1] = r_page_setup[PX4IO_P_SETUP_PARAMETER_HIGH];
+
+		mixer_group.set_mixer_param(r_page_setup[PX4IO_P_SETUP_PARAMETER_MIXER_INDEX],
+					    r_page_setup[PX4IO_P_SETUP_PARAMETER_INDEX],
+					    unpack.value,
+					    r_page_setup[PX4IO_P_SETUP_PARAMETER_MIXER_SUB_INDEX]);
+		update_mixer_param = false;
+	}
+
+#endif //MIXER_CONFIGURATION			r_mixer_crc_ok = 0;
 }

@@ -145,6 +145,7 @@ struct sys_state_s {
 };
 
 extern struct sys_state_s system_state;
+extern bool update_mixer_param;
 
 /*
  * PWM limit structure
