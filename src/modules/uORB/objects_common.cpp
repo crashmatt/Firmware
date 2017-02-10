@@ -153,6 +153,15 @@ ORB_DEFINE(onboard_mission, struct mission_s);
 #include "topics/mission_result.h"
 ORB_DEFINE(mission_result, struct mission_result_s);
 
+#include "topics/mixer_data_request.h"
+ORB_DEFINE(mixer_data_request, struct mixer_data_request_s);
+
+#include "topics/mixer_data.h"
+ORB_DEFINE(mixer_data, struct mixer_data_s);
+
+#include "topics/mixer_parameter_set.h"
+ORB_DEFINE(mixer_parameter_set, struct mixer_parameter_set_s);
+
 #include "topics/geofence_result.h"
 ORB_DEFINE(geofence_result, struct geofence_result_s);
 

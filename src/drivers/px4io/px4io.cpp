@@ -90,6 +90,11 @@
 #include <uORB/topics/servorail_status.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/multirotor_motor_limits.h>
+#if defined(MIXER_CONFIGURATION)
+#include <uORB/topics/mixer_data_request.h>
+#include <uORB/topics/mixer_parameter_set.h>
+#include <uORB/topics/mixer_data.h>
+#endif //MIXER_CONFIGURATION
 
 #include <debug.h>
 
@@ -287,6 +292,10 @@ private:
 	int			_t_param;		///< parameter update topic
 	bool			_param_update_force;	///< force a parameter update
 	int			_t_vehicle_command;	///< vehicle command topic
+#if defined(MIXER_CONFIGURATION)
+	int                     _mixer_data_request_sub; //< mixer parameter data request topic
+	int                     _mixer_parameter_set_sub;//< mixer parameter set topic
+#endif // MIXER_CONFIGURATION
 
 	/* advertised topics */
 	orb_advert_t 		_to_input_rc;		///< rc inputs from io
@@ -295,6 +304,9 @@ private:
 	orb_advert_t		_to_servorail;		///< servorail status
 	orb_advert_t		_to_safety;		///< status of safety
 	orb_advert_t 		_to_mixer_status; 	///< mixer status flags
+#if defined(MIXER_CONFIGURATION)
+	orb_advert_t            _mixer_data_pub;        ///< mixer parameter data pubilish
+#endif // MIXER_CONFIGURATION
 
 	actuator_outputs_s	_outputs;		///< mixed outputs
 	servorail_status_s	_servorail_status;	///< servorail status
@@ -316,6 +328,10 @@ private:
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
 	bool			_dsm_vcc_ctl;		///< true if relay 1 controls DSM satellite RX power
 #endif
+
+#if defined(MIXER_CONFIGURATION)
+	MixerGroup	*_mixers;
+#endif //defined(MIXER_CONFIGURATION)
 
 	/**
 	 * Trampoline to the worker task
@@ -524,13 +540,20 @@ PX4IO::PX4IO(device::Device *interface) :
 	_t_param(-1),
 	_param_update_force(false),
 	_t_vehicle_command(-1),
+#if defined(MIXER_CONFIGURATION)
+	_mixer_data_request_sub(-1),
+	_mixer_parameter_set_sub(-1),
+#endif // MIXER_CONFIGURATION
 	_to_input_rc(nullptr),
 	_to_outputs(nullptr),
 	_to_battery(nullptr),
 	_to_servorail(nullptr),
 	_to_safety(nullptr),
 	_to_mixer_status(nullptr),
-	_outputs{},
+#if defined(MIXER_CONFIGURATION)
+	_mixer_data_pub(nullptr),
+#endif // MIXER_CONFIGURATION
+	_outputs {},
 	_servorail_status{},
 	_primary_pwm_device(false),
 	_lockdown_override(false),
@@ -546,6 +569,9 @@ PX4IO::PX4IO(device::Device *interface) :
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
 	, _dsm_vcc_ctl(false)
 #endif
+#if defined(MIXER_CONFIGURATION)
+	, _mixers(nullptr)
+#endif //defined(MIXER_CONFIGURATION)
 
 {
 	/* we need this potentially before it could be set in task_main */
@@ -938,6 +964,11 @@ PX4IO::task_main()
 	_t_param = orb_subscribe(ORB_ID(parameter_update));
 	_t_vehicle_command = orb_subscribe(ORB_ID(vehicle_command));
 
+#if defined(MIXER_CONFIGURATION)
+	_mixer_data_request_sub = orb_subscribe(ORB_ID(mixer_data_request));
+	_mixer_parameter_set_sub = orb_subscribe(ORB_ID(mixer_parameter_set));
+#endif //MIXER_CONFIGURATION
+
 	if ((_t_actuator_controls_0 < 0) ||
 	    (_t_actuator_armed < 0) ||
 	    (_t_vehicle_control_mode < 0) ||
@@ -1050,6 +1081,170 @@ PX4IO::task_main()
 					dsm_bind_ioctl((int)cmd.param2);
 				}
 			}
+
+
+#if defined(MIXER_CONFIGURATION)
+			/* mixer data request */
+			orb_check(_mixer_data_request_sub, &updated);
+
+			if (updated) {
+				mixer_data_request_s req;
+				orb_copy(ORB_ID(mixer_data_request), _mixer_data_request_sub, &req);
+
+				if (req.mixer_group == 1) {
+					mixer_data_s data;
+					data.mixer_group = req.mixer_group;
+					data.mixer_index = req.mixer_index;
+					data.mixer_sub_index = req.mixer_sub_index;
+					data.parameter_index = req.parameter_index;
+					data.mixer_data_type = req.mixer_data_type;
+
+					switch (req.mixer_data_type) {
+					case 0: {
+							//Mixer count
+							data.param_type = (int16_t) _mixers->count();
+							data.real_value = 0.0;
+							data.int_value = (int32_t) data.param_type;
+							break;
+						}
+
+					case 1: {
+							//Submixer count
+							data.param_type = (int32_t) _mixers->count_submixers((unsigned)data.mixer_index);
+							data.real_value = 0.0;
+							data.int_value = (int32_t) data.param_type;
+							break;
+						}
+
+					case 2: {
+							//Mixer type
+							data.param_type = (int32_t) _mixers->get_mixer_type_from_index((unsigned)data.mixer_index,
+									  (unsigned)data.mixer_sub_index);
+							data.real_value = 0.0;
+							data.int_value = (int32_t) data.param_type;
+							break;
+						}
+
+					case 3: {
+							//Parameter
+							data.real_value = _mixers->get_mixer_param((unsigned)data.mixer_index, (unsigned)data.parameter_index,
+									  (unsigned)data.mixer_sub_index);
+							data.int_value = 9;
+							data.param_type = 9;    //FLOAT32
+							break;
+						}
+
+					//MIXER_ACTION_SAVE_GROUP
+					case 112: {
+							PX4_INFO("Saving mixers for px4io");
+
+							char **ppbuf = (char **) req.dataref;
+							unsigned buf_length = 2048;
+
+							if (*ppbuf != nullptr) {
+								if (_mixers->save_to_buf(*ppbuf, buf_length) < 0) {
+									PX4_ERR("Could not get mixer config");
+									data.int_value = -1;
+
+								} else {
+									data.int_value = strlen(*ppbuf);
+								}
+
+							} else {
+								data.int_value = -1;
+							}
+
+							break;
+						}
+
+					default:
+						data.real_value = 0.0;
+						data.int_value = -1;
+						break;
+					} //case
+
+					if (_mixer_data_pub == 0) {
+						_mixer_data_pub = orb_advertise(ORB_ID(mixer_data), &data);
+
+					} else {
+						orb_publish(ORB_ID(mixer_data), _mixer_data_pub, &data);
+					}
+				} //mixer_group
+			} //updated
+
+			orb_check(_mixer_parameter_set_sub, &updated);
+
+			if (updated) {
+				mixer_parameter_set_s param;
+				orb_copy(ORB_ID(mixer_parameter_set), _mixer_parameter_set_sub, &param);
+
+				if (param.mixer_group == 1) {
+					struct __attribute__((
+								     packed)) {        /** to send mixer indices and value in the same packet order as px4io registers**/
+						uint16_t mix_index;
+						uint16_t mix_sub_index;
+						uint16_t param_index;
+						union {
+							float 	 value;
+							uint32_t check_val;     /** to compare integer value instead of float **/
+						} param;
+					} mix_param;
+
+					mix_param.mix_index = param.mixer_index;
+					mix_param.mix_sub_index = param.mixer_sub_index;
+					mix_param.param_index = param.parameter_index;
+					mix_param.param.value = param.real_value;
+
+					uint32_t check_val = mix_param.param.check_val;
+
+					io_reg_set(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_PARAMETER_MIXER_INDEX, (uint16_t *) &mix_param, 5);
+					//No check of return status. Data checked by readback.
+
+					memset((void *) &mix_param, 0xFF, sizeof(mix_param));
+
+					ret = io_reg_get(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_PARAMETER_MIXER_INDEX, (uint16_t *) &mix_param, 5);
+
+					mixer_data_s data;
+					data.mixer_group = param.mixer_group;
+					data.mixer_index = param.mixer_index;
+					data.mixer_sub_index = param.mixer_sub_index;
+					data.parameter_index = param.parameter_index;
+					data.mixer_data_type = 3;   //Parameter
+					data.int_value = 0;
+					data.param_type = 9;    //FLOAT
+
+					if (ret == 0) {
+						data.real_value = param.real_value;
+
+					} else {
+						data.real_value = 0.0;
+					}
+
+
+					/** Check readback values against original **/
+					if ((mix_param.mix_index != param.mixer_index) ||
+					    (mix_param.mix_sub_index != param.mixer_sub_index) ||
+					    (mix_param.param_index != param.parameter_index) ||
+					    (mix_param.param.check_val != check_val)
+					   ) {
+						data.real_value = 0;
+						break;
+
+					} else {
+						_mixers->set_mixer_param((unsigned)param.mixer_index, (unsigned)param.parameter_index, param.real_value,
+									 (unsigned)param.mixer_sub_index);
+					}
+
+					if (_mixer_data_pub == 0) {
+						_mixer_data_pub = orb_advertise(ORB_ID(mixer_data), &data);
+
+					} else {
+						orb_publish(ORB_ID(mixer_data), _mixer_data_pub, &data);
+					}
+				}
+			}
+
+#endif //MIXER_CONFIGURATION
 
 			/*
 			 * If parameters have changed, re-send RC mappings to IO
@@ -2809,8 +3004,162 @@ PX4IO::ioctl(file *filep, int cmd, unsigned long arg)
 	case MIXERIOCLOADBUF: {
 			const char *buf = (const char *)arg;
 			ret = mixer_send(buf, strnlen(buf, 2048));
+
+#if defined(MIXER_CONFIGURATION)
+
+			if (ret == 0)   /* load the mixer settings into a local copy for tracking parameters */
+
+				if (_mixers == nullptr) {
+					_mixers = new MixerGroup(nullptr, (uintptr_t)nullptr);
+				}
+
+			if (_mixers == nullptr) {
+				ret = -ENOMEM;
+
+			} else {
+				unsigned buflen = strnlen(buf, 2048);
+				ret = _mixers->load_from_buf(buf, buflen);
+
+				if (ret != 0) {
+					PX4_DEBUG("mixer load failed with %d", ret);
+					delete _mixers;
+					_mixers = nullptr;
+					ret = -EINVAL;
+
+				}
+
+				// else update of pwm trims removed
+			}
+
+#endif //defined(MIXER_CONFIGURATION)
 			break;
 		}
+
+#if (defined(MIXER_CONFIGURATION) && !defined(MIXER_CONFIG_NO_NSH))
+
+	case MIXERIOCGETMIXERCOUNT: {
+			unsigned *count = (unsigned *)arg;
+
+			if (_mixers == nullptr) {
+				*count = 0;
+
+			} else {
+				*count = _mixers->count();
+			}
+
+			break;
+		}
+
+	case MIXERIOCGETSUBMIXERCOUNT:  {
+			if (_mixers == nullptr) {
+				ret = -EINVAL;
+			}
+
+			signed *count = (signed *)arg;
+			*count = _mixers->count_submixers(*count);
+
+			break;
+		}
+
+	case MIXERIOCGETTYPE: {
+			if (_mixers == nullptr) {
+				ret = -EINVAL;
+			}
+
+			mixer_type_s *mixer_type = (mixer_type_s *)arg;
+			mixer_type->mix_type =  _mixers->get_mixer_type_from_index(mixer_type->mix_index, mixer_type->mix_sub_index);
+
+			if (mixer_type->mix_type == MIXER_TYPES_NONE) {
+				ret = -EINVAL;
+
+			} else {
+				ret = 0;
+			}
+
+			break;
+		}
+
+	case MIXERIOCGETPARAM: {
+			if (_mixers == nullptr) {
+				ret = -EINVAL;
+			}
+
+			mixer_param_s *param = (mixer_param_s *)arg;
+			param->value = _mixers->get_mixer_param(param->mix_index, param->param_index, param->mix_sub_index);
+			break;
+		}
+
+	case MIXERIOCSETPARAM: {
+			if (_mixers == nullptr) {
+				ret = -EINVAL;
+				break;
+			}
+
+			struct __attribute__((
+						     packed)) {        /** to send mixer indices and value in the same packet order as px4io registers**/
+				uint16_t mix_index;
+				uint16_t mix_sub_index;
+				uint16_t param_index;
+				union {
+					float 	 value;
+					uint32_t check_val;     /** to compare integer value instead of float **/
+				} param;
+			} mix_param;
+
+			mixer_param_s *param = (mixer_param_s *)arg;
+
+			mix_param.mix_index = param->mix_index;
+			mix_param.mix_sub_index = param->mix_sub_index;
+			mix_param.param_index = param->param_index;
+			mix_param.param.value = param->value;
+
+			uint32_t check_val = mix_param.param.check_val;
+
+			ret = io_reg_set(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_PARAMETER_MIXER_INDEX, (uint16_t *) &mix_param, 5);
+
+			if (ret != 0) {
+				ret = -EINVAL;
+				break;
+			}
+
+			memset((void *) &mix_param, 0xFF, sizeof(mix_param));
+
+			ret = io_reg_get(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_PARAMETER_MIXER_INDEX, (uint16_t *) &mix_param, 5);
+
+			if (ret != 0) {
+				ret = -EINVAL;
+				break;
+			}
+
+			/** Check readback values against original **/
+			if ((mix_param.mix_index != param->mix_index) ||
+			    (mix_param.mix_sub_index != param->mix_sub_index) ||
+			    (mix_param.param_index != param->param_index) ||
+			    (mix_param.param.check_val != check_val)
+			   ) {
+				ret = -EINVAL;
+				break;
+			}
+
+			_mixers->set_mixer_param(param->mix_index, param->param_index, param->value, param->mix_sub_index);
+
+			ret = 0;
+			break;
+		}
+
+	case MIXERIOCGETCONFIG: {
+			if (_mixers == nullptr) {
+				ret = -EINVAL;
+			}
+
+			char *buf = (char *)arg;
+
+			unsigned buflen = 1022;
+			ret = _mixers->save_to_buf(buf, buflen);
+			break;
+		}
+
+#endif //defined(MIXER_CONFIGURATION)
 
 	case RC_INPUT_GET: {
 			uint16_t status;
