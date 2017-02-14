@@ -541,6 +541,15 @@ public:
 		return 0;
 	}
 
+#if defined(MIXER_CONFIGURATION)
+#if !defined(MIXER_REMOTE)
+	int                     to_text(char *buf, unsigned &buflen);
+#endif //MIXER_REMOTE
+	MIXER_TYPES             get_mixer_type(uint16_t submix_index);
+	signed                  count_submixers(void);
+	float                   get_parameter(uint16_t index, uint16_t submix_index);
+	int16_t                 set_parameter(uint16_t index, float value, uint16_t submix_index);
+#endif //defined(MIXER_CONFIGURATION)
 };
 
 /**
