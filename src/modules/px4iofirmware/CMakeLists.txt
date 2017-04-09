@@ -49,53 +49,50 @@ set(definitions)
 px4_nuttx_configure(HWCLASS m3 CONFIG nsh)
 
 px4_os_prebuild_targets(OUT io_prebuild_targets
-	BOARD ${config_io_board}
-	THREADS ${THREADS})
+        BOARD ${config_io_board}
+        THREADS ${THREADS})
 
 px4_os_add_flags(
-	BOARD ${config_io_board}
-	C_FLAGS c_flags
-	CXX_FLAGS cxx_flags
-	OPTIMIZATION_FLAGS optimization_flags
-	EXE_LINKER_FLAGS exe_linker_flags
-	INCLUDE_DIRS include_dirs
-	LINK_DIRS link_dirs
-	DEFINITIONS definitions)
+        BOARD ${config_io_board}
+        C_FLAGS c_flags
+        CXX_FLAGS cxx_flags
+        OPTIMIZATION_FLAGS optimization_flags
+        EXE_LINKER_FLAGS exe_linker_flags
+        INCLUDE_DIRS include_dirs
+        LINK_DIRS link_dirs
+        DEFINITIONS definitions)
 
 px4_join(OUT CMAKE_EXE_LINKER_FLAGS LIST "${exe_linker_flags}" GLUE " ")
 px4_join(OUT CMAKE_C_FLAGS LIST "${c_flags};${optimization_flags}" GLUE " ")
 px4_join(OUT CMAKE_CXX_FLAGS LIST "${cxx_flags};${optimization_flags}" GLUE " ")
 
 include_directories(
-	${include_dirs}
-	${PX4_BINARY_DIR}/src/modules/systemlib/mixer
-	.
-	)
+        ${include_dirs}
+        ${PX4_BINARY_DIR}/src/modules/systemlib/mixer
+        .
+        )
 link_directories(${link_dirs})
 add_definitions(${definitions})
 
 set(srcs
-	adc.c
-	controls.c
-	px4io.c
-	registers.c
-	safety.c
-	../systemlib/up_cxxinitialize.c
-	../systemlib/perf_counter.c
-	mixer.cpp
-	../systemlib/mixer/mixer.cpp
-	../systemlib/mixer/mixer_group.cpp
-	../systemlib/mixer/mixer_multirotor.cpp
-	../systemlib/mixer/mixer_helicopter.cpp
-	../systemlib/mixer/mixer_simple.cpp
-	../systemlib/pwm_limit/pwm_limit.c
-	../../lib/rc/st24.c
-	../../lib/rc/sumd.c
-	../../lib/rc/sbus.c
-	../../lib/rc/dsm.c
-	../../drivers/stm32/drv_hrt.c
-	../../drivers/stm32/drv_io_timer.c
-	../../drivers/stm32/drv_pwm_servo.c
+        adc.c
+        controls.c
+        px4io.c
+        registers.c
+        safety.c
+        ../systemlib/up_cxxinitialize.c
+        ../systemlib/perf_counter.c
+        mixer.cpp
+        ../systemlib/mixer2/mixer_registers.cpp
+        ../systemlib/mixer2/mixer.cpp
+        ../systemlib/mixer2/mixer_group.cpp
+        ../../lib/rc/st24.c
+        ../../lib/rc/sumd.c
+        ../../lib/rc/sbus.c
+        ../../lib/rc/dsm.c
+        ../../drivers/stm32/drv_hrt.c
+        ../../drivers/stm32/drv_io_timer.c
+        ../../drivers/stm32/drv_pwm_servo.c
 	../../drivers/boards/${config_io_board}/px4io_init.c
 	../../drivers/boards/${config_io_board}/px4io_timer_config.c
 	)
@@ -144,5 +141,4 @@ px4_nuttx_create_bin(OUT ${CMAKE_CURRENT_BINARY_DIR}/${fw_io_name}.bin
 add_custom_target(fw_io
 	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${fw_io_name}.bin)
 
-
-# vim: set noet ft=cmake fenc=utf-8 ff=unix : 
+# vim: set noet ft=cmake fenc=utf-8 ff=unix :

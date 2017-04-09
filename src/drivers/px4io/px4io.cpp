@@ -69,7 +69,7 @@
 
 #include <board_config.h>
 
-#include <systemlib/mixer/mixer.h>
+#include <systemlib/mixer2/mixer.h>
 #include <systemlib/perf_counter.h>
 #include <systemlib/err.h>
 #include <systemlib/systemlib.h>

@@ -74,7 +74,7 @@
 #include <drivers/drv_mixer.h>
 
 #include <systemlib/systemlib.h>
-#include <systemlib/mixer/mixer.h>
+#include <systemlib/mixer2/mixer.h>
 
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/actuator_armed.h>
@@ -133,6 +133,7 @@ private:
 	static bool	_lockdown;
 	static bool	_failsafe;
 
+	MixerRegisterGroups _reg_groups;
 	MixerGroup	*_mixers;
 
 	actuator_controls_s _controls[actuator_controls_s::NUM_ACTUATOR_CONTROL_GROUPS];
@@ -197,6 +198,7 @@ PWMSim::PWMSim() :
 	_groups_required(0),
 	_groups_subscribed(0),
 	_task_should_exit(false),
+	_reg_groups(),
 	_mixers(nullptr)
 {
 	_debug_enabled = true;
@@ -206,10 +208,6 @@ PWMSim::PWMSim() :
 	_control_topics[1] = ORB_ID(actuator_controls_1);
 	_control_topics[2] = ORB_ID(actuator_controls_2);
 	_control_topics[3] = ORB_ID(actuator_controls_3);
-
-	for (unsigned i = 0; i < actuator_controls_s::NUM_ACTUATOR_CONTROL_GROUPS; i++) {
-		_control_subs[i] = -1;
-	}
 }
 
 PWMSim::~PWMSim()
@@ -394,6 +392,21 @@ PWMSim::task_main()
 	_outputs_pub = orb_advertise(ORB_ID(actuator_outputs), &outputs);
 
 
+	_reg_groups.registerGroups[MixerRegisterGroups::REGS_CONTROL_0].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+			(mixer_register_u *) _controls[0].control, true);
+
+	_reg_groups.registerGroups[MixerRegisterGroups::REGS_CONTROL_1].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+			(mixer_register_u *) _controls[1].control, true);
+
+	_reg_groups.registerGroups[MixerRegisterGroups::REGS_CONTROL_2].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+			(mixer_register_u *) _controls[2].control, true);
+
+	_reg_groups.registerGroups[MixerRegisterGroups::REGS_CONTROL_3].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+			(mixer_register_u *) _controls[3].control, true);
+
+	_reg_groups.registerGroups[MixerRegisterGroups::REGS_OUTPUTS].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+			(mixer_register_u *) outputs.output, true);
+
 	/* loop until killed */
 	while (!_task_should_exit) {
 
@@ -487,7 +500,7 @@ PWMSim::task_main()
 			}
 
 			/* do mixing */
-			num_outputs = _mixers->mix(&outputs.output[0], num_outputs, nullptr);
+			num_outputs = _mixers->mix_group(&_reg_groups);
 			outputs.noutputs = num_outputs;
 			outputs.timestamp = hrt_absolute_time();
 
@@ -497,6 +510,8 @@ PWMSim::task_main()
 					outputs.output[i] = NAN;
 				}
 			}
+
+			//TODO CHANGE FIXED RADIO OFFSET AND SCALING HERE
 
 			/* iterate actuators */
 			for (unsigned i = 0; i < num_outputs; i++) {
@@ -794,25 +809,24 @@ PWMSim::pwm_ioctl(device::file_t *filp, int cmd, unsigned long arg)
 		break;
 
 	case MIXERIOCADDSIMPLE: {
-			mixer_simple_s *mixinfo = (mixer_simple_s *)arg;
+//			mixer_simple_s *mixinfo = (mixer_simple_s *)arg;
 
-			SimpleMixer *mixer = new SimpleMixer(control_callback,
-							     (uintptr_t)&_controls, mixinfo);
+//			SimpleMixer *mixer = new SimpleMixer(control_callback,
+//							     (uintptr_t)&_controls, mixinfo);
 
-			if (mixer->check()) {
-				delete mixer;
-				_groups_required = 0;
-				ret = -EINVAL;
+//			if (mixer->check()) {
+//				delete mixer;
+//				_groups_required = 0;
+//				ret = -EINVAL;
 
-			} else {
-				if (_mixers == nullptr) {
-					_mixers = new MixerGroup(control_callback,
-								 (uintptr_t)&_controls);
-				}
+//			} else {
+//				if (_mixers == nullptr) {
+//                    _mixers = new MixerGroup(&_reg_groups);
+//				}
 
-				_mixers->add_mixer(mixer);
-				_mixers->groups_required(_groups_required);
-			}
+//				_mixers->add_mixer(mixer);
+//				_mixers->groups_required(_groups_required);
+//			}
 
 			break;
 		}
@@ -822,7 +836,7 @@ PWMSim::pwm_ioctl(device::file_t *filp, int cmd, unsigned long arg)
 			unsigned buflen = strnlen(buf, 1024);
 
 			if (_mixers == nullptr) {
-				_mixers = new MixerGroup(control_callback, (uintptr_t)&_controls);
+				_mixers = new MixerGroup(&_reg_groups);
 			}
 
 			if (_mixers == nullptr) {
