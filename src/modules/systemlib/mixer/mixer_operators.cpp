@@ -75,6 +75,7 @@ MixerAdd::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
 	float *right = reg_groups->getFloatValue(mixdata->ref_right);
 
 	*dest = *left + *right;
+//    printf("dest=%f left=%f right=%f\n", (double) *dest, (double) *left, (double) *right);
 	return 0;
 }
 

@@ -72,6 +72,10 @@ MixerGroup::~MixerGroup()
 int
 MixerGroup::append_mixer(Mixer *mixer)
 {
+	if (mixer == nullptr) {
+		return -1;
+	}
+
 	Mixer **mpp;
 
 	mpp = &_first;

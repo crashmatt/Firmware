@@ -123,7 +123,18 @@ public:
 	 */
 	virtual uint16_t		mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type = MIXER_REGISTER_TYPE_NONE) = 0;
 
-	uint16_t getBaseType()  {if (_mixdata != nullptr) return _mixdata->base_type;  else return MIXER_BASE_TYPE_NONE;}
+	/**
+	 * Get the base type of the mixer to perform appropriate operations on data structures
+	 *
+	 * @return			Mixer base type
+	 */
+	virtual uint16_t    getBaseType()  {return MIXER_BASE_TYPE_NONE;}
+
+	/**
+	 * Get the mixer type from the mixer data
+	 *
+	 * @return			Mixer type
+	 */
 	uint16_t getMixerType() {if (_mixdata != nullptr) return _mixdata->mixer_type; else return MIXER_TYPES_NONE;}
 
 
@@ -157,6 +168,8 @@ class __EXPORT MixerOperator : public Mixer
 public:
 	MixerOperator(mixer_data_operator_s *mixdata);
 	~MixerOperator();
+
+	uint16_t getBaseType()  {return MIXER_BASE_TYPE_OPERATOR;}
 protected:
 private:
 };
@@ -172,6 +185,7 @@ public:
 	MixerFunction(mixer_data_function_s *mixdata);
 	~MixerFunction();
 
+	uint16_t getBaseType()  {return MIXER_BASE_TYPE_FUNCTION;}
 protected:
 private:
 };
@@ -189,6 +203,9 @@ class __EXPORT MixerObject : public Mixer
 public:
 	MixerObject(mixer_data_object_s *mixdata);
 	virtual ~MixerObject() {;}
+
+	uint16_t getBaseType()  {return MIXER_BASE_TYPE_OBJECT;}
+
 #if !defined(MIXER_REMOTE)
 	/**
 	* gets a mixer parameter and metadata

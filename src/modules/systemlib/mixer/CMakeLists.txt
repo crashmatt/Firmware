@@ -45,8 +45,9 @@ px4_add_module(
 	SRCS
                 mixer_registers.cpp
                 mixer.cpp
-				mixer_group.cpp
+                mixer_group.cpp
                 mixer_operators.cpp
+                mixers.cpp
 	DEPENDS
 		platforms__common
 #		mixer_gen

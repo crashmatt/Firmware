@@ -88,7 +88,7 @@ class PWMSim : public device::CDev
 class PWMSim : public device::VDev
 #endif
 {
-	const uint32_t PWM_SIM_DISARMED_MAGIC = 900;
+	const uint32_t PWM_SIM_DISARMED_MAGIC = 900;    //TODO Review if magics are safe
 	const uint32_t PWM_SIM_FAILSAFE_MAGIC = 600;
 public:
 	enum Mode {
@@ -418,7 +418,16 @@ PWMSim::task_main()
 	oppdata->ref_right.index = actuator_controls_s::INDEX_FLAPS;
 	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata->ref_out.index = 0;
-	_mixers->append_mixer(new MixerAdd(oppdata));
+	oppdata->header.mixer_type = MIXER_TYPES_ADD;
+	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) oppdata));
+//    _mixers->append_mixer(new MixerAdd(oppdata));
+
+	printf("size of Mixer:%u\n", sizeof(Mixer));
+	printf("size of MixerOperator:%u\n", sizeof(MixerOperator));
+	printf("size of MixerAdd:%u\n", sizeof(MixerAdd));
+	printf("size of mixer_register_val_u:%u\n", sizeof(mixer_register_val_u));
+	printf("size of mixer_register_ref_s:%u\n", sizeof(mixer_register_ref_s));
+	printf("size of mixer_data_operator_s:%u\n", sizeof(mixer_data_operator_s));
 
 	oppdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
 	oppdata->ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
@@ -427,14 +436,18 @@ PWMSim::task_main()
 	oppdata->ref_right.index = actuator_controls_s::INDEX_YAW;
 	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata->ref_out.index = 3;
-	_mixers->append_mixer(new MixerAdd(oppdata));
+	oppdata->header.mixer_type = MIXER_TYPES_ADD;
+	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) oppdata));
+//	_mixers->append_mixer(new MixerAdd(oppdata));
 
 	oppdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
 	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
 	oppdata->ref_right.index = actuator_controls_s::INDEX_PITCH;
 	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata->ref_out.index = 1;
-	_mixers->append_mixer(new MixerCopy(oppdata));
+	oppdata->header.mixer_type = MIXER_TYPES_COPY;
+	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) oppdata));
+//	_mixers->append_mixer(new MixerCopy(oppdata));
 
 	_groups_required = 0x01;
 
@@ -530,17 +543,26 @@ PWMSim::task_main()
 				break;
 			}
 
-			/* do mixing */
-			num_outputs = _mixers->mix_group();
-			outputs.noutputs = num_outputs;
-			outputs.timestamp = hrt_absolute_time();
-
-			/* disable unused ports by setting their output to NaN */
+			/* default ports to disabled by setting output to NaN */
 			for (size_t i = 0; i < sizeof(outputs.output) / sizeof(outputs.output[0]); i++) {
 				if (i >= num_outputs) {
 					outputs.output[i] = NAN;
 				}
 			}
+
+			/* do mixing */
+			_mixers->mix_group();
+			outputs.timestamp = hrt_absolute_time();
+
+			for (size_t i = 0; i < sizeof(outputs.output) / sizeof(outputs.output[0]); i++) {
+				if (outputs.output[i] != NAN) {
+					printf("out[%u]=%f", i, (double) outputs.output[i]);
+					num_outputs = i + 1;
+				}
+			}
+
+			printf("\n");
+			outputs.noutputs = num_outputs;
 
 			//TODO CHANGE FIXED RADIO OFFSET AND SCALING HERE
 

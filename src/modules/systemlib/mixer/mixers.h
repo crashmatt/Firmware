@@ -49,5 +49,10 @@
 
 #include "mixer_types.h"
 
+class __EXPORT MixerFactory
+{
+public:
+	static Mixer *factory(mixer_base_header_s *mixdata);
+};
 
 #endif  //_SYSTEMLIB_MIXER_MIXERS_H

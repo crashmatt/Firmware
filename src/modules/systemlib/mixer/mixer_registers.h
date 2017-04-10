@@ -77,16 +77,15 @@ typedef union {
 typedef struct
 __attribute__((packed))
 {
-	uint16_t    data_size;
-	uint8_t     base_type;
-	uint8_t     mixer_type;
+	uint16_t     data_size;
+	uint16_t     mixer_type;
 } mixer_base_header_s;
 
 
 typedef struct
 __attribute__((packed))
 {
-	mixer_base_header_s     base;
+	mixer_base_header_s     header;
 	mixer_register_ref_s    ref_left;
 	mixer_register_ref_s    ref_right;
 	mixer_register_ref_s    ref_out;
@@ -106,7 +105,7 @@ __attribute__((packed))
 typedef struct
 __attribute__((packed))
 {
-	mixer_base_header_s     base;
+	mixer_base_header_s     header;
 	mixer_data_io_s         io;
 } mixer_data_function_s;
 

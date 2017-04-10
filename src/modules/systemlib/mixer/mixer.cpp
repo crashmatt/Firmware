@@ -68,7 +68,6 @@ Mixer::Mixer(mixer_base_header_s *mixdata)
 MixerOperator::MixerOperator(mixer_data_operator_s *mixdata)
 	: Mixer((mixer_base_header_s *) mixdata)
 {
-	_mixdata->base_type = MIXER_BASE_TYPE_OPERATOR;
 }
 
 MixerOperator::~MixerOperator()
@@ -83,7 +82,6 @@ MixerOperator::~MixerOperator()
 MixerFunction::MixerFunction(mixer_data_function_s *mixdata)
 	: Mixer((mixer_base_header_s *) mixdata)
 {
-	_mixdata->base_type = MIXER_BASE_TYPE_FUNCTION;
 }
 
 MixerFunction::~MixerFunction()
@@ -97,5 +95,4 @@ MixerFunction::~MixerFunction()
 MixerObject::MixerObject(mixer_data_object_s *mixdata)
 	: Mixer((mixer_base_header_s *) mixdata)
 {
-	_mixdata->base_type = MIXER_BASE_TYPE_FUNCTION;
 }

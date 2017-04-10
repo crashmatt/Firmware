@@ -32,24 +32,52 @@
  ****************************************************************************/
 
 /**
- * @file mixer_types.h
+ * @file mixer.cpp
  *
- * Descripition of mixer types
+ * Generic mixer library.
  */
 
+#include <px4_config.h>
 
-#ifndef _SYSTEMLIB_MIXER_TYPES_H
-#define _SYSTEMLIB_MIXER_TYPES_H value
+#include <sys/types.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <poll.h>
+#include <errno.h>
+#include <stdio.h>
+#include <math.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <systemlib/err.h>
+
+#include "mixers.h"
 
 
-typedef enum {
-	MIXER_TYPES_NONE = 0,
-	MIXER_TYPES_NULL,
-	MIXER_TYPES_ADD,
-	MIXER_TYPES_COPY,
-	MIXER_TYPES_MULTIPLY,
-	MIXER_TYPES_COUNT    // MUST BE AT END
-} MIXER_TYPES;
+Mixer *MixerFactory::factory(mixer_base_header_s *mixdata)
+{
+	if (mixdata == nullptr) {
+		return nullptr;
+	}
 
+	switch (mixdata->mixer_type) {
+	case MIXER_TYPES_ADD :
+		return new MixerAdd((mixer_data_operator_s *) mixdata);
+		break;
 
-#endif
+	case MIXER_TYPES_COPY :
+		return new MixerCopy((mixer_data_operator_s *) mixdata);
+		break;
+
+	case MIXER_TYPES_MULTIPLY :
+		return new MixerMultiply((mixer_data_operator_s *) mixdata);
+		break;
+
+	case MIXER_TYPES_NONE :
+	default:
+		return nullptr;
+		break;
+	}
+}
