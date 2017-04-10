@@ -53,50 +53,67 @@
 #include <ctype.h>
 #include <systemlib/err.h>
 
-#include "mixer.h"
+#include "mixer_operators.h"
 
 #define debug(fmt, args...)	do { } while(0)
 //#define debug(fmt, args...)	do { printf("[mixer] " fmt "\n", ##args); } while(0)
 
-Mixer::Mixer(mixer_base_header_s *mixdata)
-	: _mixdata(mixdata)
-{
-}
 
 /****************************************************************************/
 
-MixerOperator::MixerOperator(mixer_data_operator_s *mixdata)
-	: Mixer((mixer_base_header_s *) mixdata)
+MixerAdd::MixerAdd(mixer_data_operator_s *mixdata)
+	: MixerOperator(mixdata)
 {
 }
 
-MixerOperator::~MixerOperator()
+uint16_t
+MixerAdd::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
 {
-	if (_mixdata != nullptr) {
-		free((mixer_data_operator_s *) _mixdata);
-	}
-}
+	mixer_data_operator_s *mixdata = (mixer_data_operator_s *) _mixdata;
+	float *dest = reg_groups->getFloatValue(mixdata->ref_out);
+	float *left = reg_groups->getFloatValue(mixdata->ref_left);
+	float *right = reg_groups->getFloatValue(mixdata->ref_right);
 
-/****************************************************************************/
-
-MixerFunction::MixerFunction(mixer_data_function_s *mixdata)
-	: Mixer((mixer_base_header_s *) mixdata)
-{
-}
-
-MixerFunction::~MixerFunction()
-{
+	*dest = *left + *right;
+	return 0;
 }
 
 
 /****************************************************************************/
 
-
-MixerObject::MixerObject(mixer_data_object_s *mixdata)
-	: Mixer((mixer_base_header_s *) mixdata)
+MixerCopy::MixerCopy(mixer_data_operator_s *mixdata)
+	: MixerOperator(mixdata)
 {
 }
 
-MixerObject::~MixerObject()
+uint16_t
+MixerCopy::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
 {
+	mixer_data_operator_s *mixdata = (mixer_data_operator_s *) _mixdata;
+	float *dest = reg_groups->getFloatValue(mixdata->ref_out);
+	float *right = reg_groups->getFloatValue(mixdata->ref_right);
+
+	*dest = *right;
+	return 0;
+	return 0;
+}
+
+
+/****************************************************************************/
+
+MixerMultiply::MixerMultiply(mixer_data_operator_s *mixdata)
+	: MixerOperator(mixdata)
+{
+}
+
+uint16_t
+MixerMultiply::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
+{
+	mixer_data_operator_s *mixdata = (mixer_data_operator_s *) _mixdata;
+	float *dest = reg_groups->getFloatValue(mixdata->ref_out);
+	float *left = reg_groups->getFloatValue(mixdata->ref_left);
+	float *right = reg_groups->getFloatValue(mixdata->ref_right);
+
+	*dest = *left * *right;
+	return 0;
 }

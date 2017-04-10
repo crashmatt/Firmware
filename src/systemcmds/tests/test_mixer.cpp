@@ -66,14 +66,14 @@
 
 #include <unit_test/unit_test.h>
 
-static int	mixer_callback(uintptr_t handle,
-			       uint8_t control_group,
-			       uint8_t control_index,
-			       float &control);
+//static int	mixer_callback(uintptr_t handle,
+//			       uint8_t control_group,
+//			       uint8_t control_index,
+//			       float &control);
 
 const unsigned output_max = 8;
-static float actuator_controls[output_max];
-static bool should_prearm = false;
+//static float actuator_controls[output_max];
+//static bool should_prearm = false;
 
 #define NAN_VALUE 0.0f/0.0f
 
@@ -124,21 +124,22 @@ private:
 };
 
 MixerTest::MixerTest() : UnitTest(),
-	mixer_group(mixer_callback, 0)
+	mixer_group(nullptr)
 {
 }
 
 bool MixerTest::run_tests()
 {
-	ut_run_test(loadIOPass);
-	ut_run_test(loadQuadTest);
-	ut_run_test(loadVTOL1Test);
-	ut_run_test(loadVTOL2Test);
-	ut_run_test(loadComplexTest);
-	ut_run_test(loadAllTest);
-	ut_run_test(mixerTest);
+//	ut_run_test(loadIOPass);
+//	ut_run_test(loadQuadTest);
+//	ut_run_test(loadVTOL1Test);
+//	ut_run_test(loadVTOL2Test);
+//	ut_run_test(loadComplexTest);
+//	ut_run_test(loadAllTest);
+//	ut_run_test(mixerTest);
 
-	return (_tests_failed == 0);
+//	return (_tests_failed == 0);
+	return false;
 }
 
 ut_declare_test_c(test_mixer, MixerTest)
@@ -241,26 +242,27 @@ bool MixerTest::loadAllTest()
 
 bool MixerTest::load_mixer(const char *filename, unsigned expected_count, bool verbose)
 {
-	char buf[2048];
+//	char buf[2048];
 
-	load_mixer_file(filename, &buf[0], sizeof(buf));
-	unsigned loaded = strlen(buf);
+//	load_mixer_file(filename, &buf[0], sizeof(buf));
+//	unsigned loaded = strlen(buf);
 
-	if (verbose) {
-		PX4_INFO("loaded: \n\"%s\"\n (file: %s, %d chars)", &buf[0], filename, loaded);
-	}
+//	if (verbose) {
+//		PX4_INFO("loaded: \n\"%s\"\n (file: %s, %d chars)", &buf[0], filename, loaded);
+//	}
 
-	// Test a number of chunk sizes
-	for (unsigned chunk_size = 6; chunk_size < PX4IO_MAX_TRANSFER_LEN + 1; chunk_size++) {
-		bool ret = load_mixer(filename, buf, loaded, expected_count, chunk_size, verbose);
+//	// Test a number of chunk sizes
+//	for (unsigned chunk_size = 6; chunk_size < PX4IO_MAX_TRANSFER_LEN + 1; chunk_size++) {
+//		bool ret = load_mixer(filename, buf, loaded, expected_count, chunk_size, verbose);
 
-		if (!ret) {
-			PX4_ERR("Mixer load failed with chunk size %u", chunk_size);
-			return ret;
-		}
-	}
+//		if (!ret) {
+//			PX4_ERR("Mixer load failed with chunk size %u", chunk_size);
+//			return ret;
+//		}
+//	}
 
-	return true;
+//	return true;
+	return false;
 }
 
 bool MixerTest::load_mixer(const char *filename, const char *buf, unsigned loaded, unsigned expected_count,
@@ -269,345 +271,347 @@ bool MixerTest::load_mixer(const char *filename, const char *buf, unsigned loade
 {
 
 
-	/* load the mixer in chunks, like
-	 * in the case of a remote load,
-	 * e.g. on PX4IO.
-	 */
+//	/* load the mixer in chunks, like
+//	 * in the case of a remote load,
+//	 * e.g. on PX4IO.
+//	 */
 
-	/* load at once test */
-	unsigned xx = loaded;
-	mixer_group.reset();
-	mixer_group.load_from_buf(&buf[0], xx);
+//	/* load at once test */
+//	unsigned xx = loaded;
+//	mixer_group.reset();
+//	mixer_group.load_from_buf(&buf[0], xx);
 
-	if (expected_count > 0) {
-		ut_compare("check number of mixers loaded", mixer_group.count(), expected_count);
-	}
+//	if (expected_count > 0) {
+//		ut_compare("check number of mixers loaded", mixer_group.count(), expected_count);
+//	}
 
-	unsigned empty_load = 2;
-	char empty_buf[2];
-	empty_buf[0] = ' ';
-	empty_buf[1] = '\0';
-	mixer_group.reset();
-	mixer_group.load_from_buf(&empty_buf[0], empty_load);
+//	unsigned empty_load = 2;
+//	char empty_buf[2];
+//	empty_buf[0] = ' ';
+//	empty_buf[1] = '\0';
+//	mixer_group.reset();
+//	mixer_group.load_from_buf(&empty_buf[0], empty_load);
 
-	if (verbose) {
-		PX4_INFO("empty buffer load: loaded %u mixers, used: %u", mixer_group.count(), empty_load);
-	}
+//	if (verbose) {
+//		PX4_INFO("empty buffer load: loaded %u mixers, used: %u", mixer_group.count(), empty_load);
+//	}
 
-	ut_compare("empty buffer load", empty_load, 0);
+//	ut_compare("empty buffer load", empty_load, 0);
 
-	/* reset, load in chunks */
-	mixer_group.reset();
-	char mixer_text[PX4IO_MAX_MIXER_LENGHT];		/* large enough for one mixer */
+//	/* reset, load in chunks */
+//	mixer_group.reset();
+//	char mixer_text[PX4IO_MAX_MIXER_LENGHT];		/* large enough for one mixer */
 
-	unsigned mixer_text_length = 0;
-	unsigned transmitted = 0;
-	unsigned resid = 0;
+//	unsigned mixer_text_length = 0;
+//	unsigned transmitted = 0;
+//	unsigned resid = 0;
 
-	while (transmitted < loaded) {
+//	while (transmitted < loaded) {
 
-		unsigned text_length = (loaded - transmitted > chunk_size) ? chunk_size : loaded - transmitted;
+//		unsigned text_length = (loaded - transmitted > chunk_size) ? chunk_size : loaded - transmitted;
 
-		/* check for overflow - this would be really fatal */
-		if ((mixer_text_length + text_length + 1) > sizeof(mixer_text)) {
-			PX4_ERR("Mixer text length overflow for file: %s. Is PX4IO_MAX_MIXER_LENGHT too small? (curr len: %d)", filename,
-				PX4IO_MAX_MIXER_LENGHT);
-			return false;
-		}
+//		/* check for overflow - this would be really fatal */
+//		if ((mixer_text_length + text_length + 1) > sizeof(mixer_text)) {
+//			PX4_ERR("Mixer text length overflow for file: %s. Is PX4IO_MAX_MIXER_LENGHT too small? (curr len: %d)", filename,
+//				PX4IO_MAX_MIXER_LENGHT);
+//			return false;
+//		}
 
-		/* append mixer text and nul-terminate */
-		memcpy(&mixer_text[mixer_text_length], &buf[transmitted], text_length);
-		mixer_text_length += text_length;
-		mixer_text[mixer_text_length] = '\0';
-		//fprintf(stderr, "buflen %u, text:\n\"%s\"\n", mixer_text_length, &mixer_text[0]);
+//		/* append mixer text and nul-terminate */
+//		memcpy(&mixer_text[mixer_text_length], &buf[transmitted], text_length);
+//		mixer_text_length += text_length;
+//		mixer_text[mixer_text_length] = '\0';
+//		//fprintf(stderr, "buflen %u, text:\n\"%s\"\n", mixer_text_length, &mixer_text[0]);
 
-		/* process the text buffer, adding new mixers as their descriptions can be parsed */
-		resid = mixer_text_length;
-		mixer_group.load_from_buf(&mixer_text[0], resid);
+//		/* process the text buffer, adding new mixers as their descriptions can be parsed */
+//		resid = mixer_text_length;
+//		mixer_group.load_from_buf(&mixer_text[0], resid);
 
-		/* if anything was parsed */
-		if (resid != mixer_text_length) {
-			//PX4_INFO("loaded %d mixers, used %u\n", mixer_group.count(), mixer_text_length - resid);
+//		/* if anything was parsed */
+//		if (resid != mixer_text_length) {
+//			//PX4_INFO("loaded %d mixers, used %u\n", mixer_group.count(), mixer_text_length - resid);
 
-			/* copy any leftover text to the base of the buffer for re-use */
-			if (resid > 0) {
-				memmove(&mixer_text[0], &mixer_text[mixer_text_length - resid], resid);
-				/* enforce null termination */
-				mixer_text[resid] = '\0';
-			}
+//			/* copy any leftover text to the base of the buffer for re-use */
+//			if (resid > 0) {
+//				memmove(&mixer_text[0], &mixer_text[mixer_text_length - resid], resid);
+//				/* enforce null termination */
+//				mixer_text[resid] = '\0';
+//			}
 
-			mixer_text_length = resid;
-		}
+//			mixer_text_length = resid;
+//		}
 
-		transmitted += text_length;
+//		transmitted += text_length;
 
-		if (verbose) {
-			PX4_INFO("transmitted: %d, loaded: %d", transmitted, loaded);
-		}
-	}
+//		if (verbose) {
+//			PX4_INFO("transmitted: %d, loaded: %d", transmitted, loaded);
+//		}
+//	}
 
-	if (verbose) {
-		PX4_INFO("chunked load: loaded %u mixers", mixer_group.count());
-	}
+//	if (verbose) {
+//		PX4_INFO("chunked load: loaded %u mixers", mixer_group.count());
+//	}
 
-	if (expected_count > 0 && mixer_group.count() != expected_count) {
-		PX4_ERR("Load of mixer failed, last chunk: %s, transmitted: %u, text length: %u, resid: %u", mixer_text, transmitted,
-			mixer_text_length, resid);
-		ut_compare("check number of mixers loaded (chunk)", mixer_group.count(), expected_count);
-	}
+//	if (expected_count > 0 && mixer_group.count() != expected_count) {
+//		PX4_ERR("Load of mixer failed, last chunk: %s, transmitted: %u, text length: %u, resid: %u", mixer_text, transmitted,
+//			mixer_text_length, resid);
+//		ut_compare("check number of mixers loaded (chunk)", mixer_group.count(), expected_count);
+//	}
 
-	return true;
+//	return true;
+	return false;
 }
 
 bool MixerTest::mixerTest()
 {
-	/*
-	 * PWM limit structure
-	 */
-	pwm_limit_t pwm_limit;
-	bool should_arm = false;
-	uint16_t r_page_servo_disarmed[output_max];
-	uint16_t r_page_servo_control_min[output_max];
-	uint16_t r_page_servo_control_max[output_max];
-	uint16_t r_page_servos[output_max];
-	uint16_t servo_predicted[output_max];
-	int16_t reverse_pwm_mask = 0;
+//	/*
+//	 * PWM limit structure
+//	 */
+//	pwm_limit_t pwm_limit;
+//	bool should_arm = false;
+//	uint16_t r_page_servo_disarmed[output_max];
+//	uint16_t r_page_servo_control_min[output_max];
+//	uint16_t r_page_servo_control_max[output_max];
+//	uint16_t r_page_servos[output_max];
+//	uint16_t servo_predicted[output_max];
+//	int16_t reverse_pwm_mask = 0;
 
-	bool load_ok = load_mixer(MIXER_PATH(IO_pass.mix), 8);
+//	bool load_ok = load_mixer(MIXER_PATH(IO_pass.mix), 8);
 
-	if (!load_ok) {
-		return load_ok;
-	}
+//	if (!load_ok) {
+//		return load_ok;
+//	}
 
-	/* execute the mixer */
+//	/* execute the mixer */
 
-	float	outputs[output_max];
-	unsigned mixed;
-	const int jmax = 5;
+//	float	outputs[output_max];
+//	unsigned mixed;
+//	const int jmax = 5;
 
-	pwm_limit_init(&pwm_limit);
+//	pwm_limit_init(&pwm_limit);
 
-	/* run through arming phase */
-	for (unsigned i = 0; i < output_max; i++) {
-		actuator_controls[i] = 0.1f;
-		r_page_servo_disarmed[i] = PWM_MOTOR_OFF;
-		r_page_servo_control_min[i] = PWM_DEFAULT_MIN;
-		r_page_servo_control_max[i] = PWM_DEFAULT_MAX;
-	}
+//	/* run through arming phase */
+//	for (unsigned i = 0; i < output_max; i++) {
+//		actuator_controls[i] = 0.1f;
+//		r_page_servo_disarmed[i] = PWM_MOTOR_OFF;
+//		r_page_servo_control_min[i] = PWM_DEFAULT_MIN;
+//		r_page_servo_control_max[i] = PWM_DEFAULT_MAX;
+//	}
 
-	//PX4_INFO("PRE-ARM TEST: DISABLING SAFETY");
+//	//PX4_INFO("PRE-ARM TEST: DISABLING SAFETY");
 
-	/* mix */
-	should_prearm = true;
-	mixed = mixer_group.mix(&outputs[0], output_max, nullptr);
+//	/* mix */
+//	should_prearm = true;
+//	mixed = mixer_group.mix(&outputs[0], output_max, nullptr);
 
-	pwm_limit_calc(should_arm, should_prearm, mixed, reverse_pwm_mask, r_page_servo_disarmed, r_page_servo_control_min,
-		       r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
+//	pwm_limit_calc(should_arm, should_prearm, mixed, reverse_pwm_mask, r_page_servo_disarmed, r_page_servo_control_min,
+//		       r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
 
-	//warnx("mixed %d outputs (max %d), values:", mixed, output_max);
-	for (unsigned i = 0; i < mixed; i++) {
+//	//warnx("mixed %d outputs (max %d), values:", mixed, output_max);
+//	for (unsigned i = 0; i < mixed; i++) {
 
-		//fprintf(stderr, "pre-arm:\t %d: out: %8.4f, servo: %d \n", i, (double)outputs[i], (int)r_page_servos[i]);
+//		//fprintf(stderr, "pre-arm:\t %d: out: %8.4f, servo: %d \n", i, (double)outputs[i], (int)r_page_servos[i]);
 
-		if (i != actuator_controls_s::INDEX_THROTTLE) {
-			if (r_page_servos[i] < r_page_servo_control_min[i]) {
-				warnx("active servo < min");
-				return false;
-			}
+//		if (i != actuator_controls_s::INDEX_THROTTLE) {
+//			if (r_page_servos[i] < r_page_servo_control_min[i]) {
+//				warnx("active servo < min");
+//				return false;
+//			}
 
-		} else {
-			if (r_page_servos[i] != r_page_servo_disarmed[i]) {
-				warnx("throttle output != 0 (this check assumed the IO pass mixer!)");
-				return false;
-			}
-		}
-	}
+//		} else {
+//			if (r_page_servos[i] != r_page_servo_disarmed[i]) {
+//				warnx("throttle output != 0 (this check assumed the IO pass mixer!)");
+//				return false;
+//			}
+//		}
+//	}
 
-	should_arm = true;
-	should_prearm = false;
+//	should_arm = true;
+//	should_prearm = false;
 
-	/* simulate another orb_copy() from actuator controls */
-	for (unsigned i = 0; i < output_max; i++) {
-		actuator_controls[i] = 0.1f;
-	}
+//	/* simulate another orb_copy() from actuator controls */
+//	for (unsigned i = 0; i < output_max; i++) {
+//		actuator_controls[i] = 0.1f;
+//	}
 
-	//PX4_INFO("ARMING TEST: STARTING RAMP");
-	unsigned sleep_quantum_us = 10000;
+//	//PX4_INFO("ARMING TEST: STARTING RAMP");
+//	unsigned sleep_quantum_us = 10000;
 
-	hrt_abstime starttime = hrt_absolute_time();
-	unsigned sleepcount = 0;
+//	hrt_abstime starttime = hrt_absolute_time();
+//	unsigned sleepcount = 0;
 
-	while (hrt_elapsed_time(&starttime) < INIT_TIME_US + RAMP_TIME_US + 2 * sleep_quantum_us) {
+//	while (hrt_elapsed_time(&starttime) < INIT_TIME_US + RAMP_TIME_US + 2 * sleep_quantum_us) {
 
-		/* mix */
-		mixed = mixer_group.mix(&outputs[0], output_max, nullptr);
+//		/* mix */
+//		mixed = mixer_group.mix(&outputs[0], output_max, nullptr);
 
-		pwm_limit_calc(should_arm, should_prearm, mixed, reverse_pwm_mask, r_page_servo_disarmed, r_page_servo_control_min,
-			       r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
+//		pwm_limit_calc(should_arm, should_prearm, mixed, reverse_pwm_mask, r_page_servo_disarmed, r_page_servo_control_min,
+//			       r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
 
-		//warnx("mixed %d outputs (max %d), values:", mixed, output_max);
-		for (unsigned i = 0; i < mixed; i++) {
+//		//warnx("mixed %d outputs (max %d), values:", mixed, output_max);
+//		for (unsigned i = 0; i < mixed; i++) {
 
-			//fprintf(stderr, "ramp:\t %d: out: %8.4f, servo: %d \n", i, (double)outputs[i], (int)r_page_servos[i]);
+//			//fprintf(stderr, "ramp:\t %d: out: %8.4f, servo: %d \n", i, (double)outputs[i], (int)r_page_servos[i]);
 
-			/* check mixed outputs to be zero during init phase */
-			if (hrt_elapsed_time(&starttime) < INIT_TIME_US &&
-			    r_page_servos[i] != r_page_servo_disarmed[i]) {
-				PX4_ERR("disarmed servo value mismatch: %d vs %d", r_page_servos[i], r_page_servo_disarmed[i]);
-				return false;
-			}
+//			/* check mixed outputs to be zero during init phase */
+//			if (hrt_elapsed_time(&starttime) < INIT_TIME_US &&
+//			    r_page_servos[i] != r_page_servo_disarmed[i]) {
+//				PX4_ERR("disarmed servo value mismatch: %d vs %d", r_page_servos[i], r_page_servo_disarmed[i]);
+//				return false;
+//			}
 
-			if (hrt_elapsed_time(&starttime) >= INIT_TIME_US &&
-			    r_page_servos[i] + 1 <= r_page_servo_disarmed[i]) {
-				PX4_ERR("ramp servo value mismatch");
-				return false;
-			}
-		}
+//			if (hrt_elapsed_time(&starttime) >= INIT_TIME_US &&
+//			    r_page_servos[i] + 1 <= r_page_servo_disarmed[i]) {
+//				PX4_ERR("ramp servo value mismatch");
+//				return false;
+//			}
+//		}
 
-		usleep(sleep_quantum_us);
-		sleepcount++;
+//		usleep(sleep_quantum_us);
+//		sleepcount++;
 
-		if (sleepcount % 10 == 0) {
-			fflush(stdout);
-		}
-	}
+//		if (sleepcount % 10 == 0) {
+//			fflush(stdout);
+//		}
+//	}
 
-	//PX4_INFO("ARMING TEST: NORMAL OPERATION");
+//	//PX4_INFO("ARMING TEST: NORMAL OPERATION");
 
-	for (int j = -jmax; j <= jmax; j++) {
+//	for (int j = -jmax; j <= jmax; j++) {
 
-		for (unsigned i = 0; i < output_max; i++) {
-			actuator_controls[i] = j / 10.0f + 0.1f * i;
-			r_page_servo_disarmed[i] = PWM_LOWEST_MIN;
-			r_page_servo_control_min[i] = PWM_DEFAULT_MIN;
-			r_page_servo_control_max[i] = PWM_DEFAULT_MAX;
-		}
+//		for (unsigned i = 0; i < output_max; i++) {
+//			actuator_controls[i] = j / 10.0f + 0.1f * i;
+//			r_page_servo_disarmed[i] = PWM_LOWEST_MIN;
+//			r_page_servo_control_min[i] = PWM_DEFAULT_MIN;
+//			r_page_servo_control_max[i] = PWM_DEFAULT_MAX;
+//		}
 
-		/* mix */
-		mixed = mixer_group.mix(&outputs[0], output_max, nullptr);
+//		/* mix */
+//		mixed = mixer_group.mix(&outputs[0], output_max, nullptr);
 
-		pwm_limit_calc(should_arm, should_prearm, mixed, reverse_pwm_mask, r_page_servo_disarmed, r_page_servo_control_min,
-			       r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
+//		pwm_limit_calc(should_arm, should_prearm, mixed, reverse_pwm_mask, r_page_servo_disarmed, r_page_servo_control_min,
+//			       r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
 
-		//fprintf(stderr, "mixed %d outputs (max %d)", mixed, output_max);
+//		//fprintf(stderr, "mixed %d outputs (max %d)", mixed, output_max);
 
-		for (unsigned i = 0; i < mixed; i++) {
-			servo_predicted[i] = 1500 + outputs[i] * (r_page_servo_control_max[i] - r_page_servo_control_min[i]) / 2.0f;
+//		for (unsigned i = 0; i < mixed; i++) {
+//			servo_predicted[i] = 1500 + outputs[i] * (r_page_servo_control_max[i] - r_page_servo_control_min[i]) / 2.0f;
 
-			if (abs(servo_predicted[i] - r_page_servos[i]) > MIXER_DIFFERENCE_THRESHOLD) {
-				fprintf(stderr, "\t %d: %8.4f predicted: %d, servo: %d\n", i, (double)outputs[i], servo_predicted[i],
-					(int)r_page_servos[i]);
-				PX4_ERR("mixer violated predicted value");
-				return false;
-			}
-		}
-	}
+//			if (abs(servo_predicted[i] - r_page_servos[i]) > MIXER_DIFFERENCE_THRESHOLD) {
+//				fprintf(stderr, "\t %d: %8.4f predicted: %d, servo: %d\n", i, (double)outputs[i], servo_predicted[i],
+//					(int)r_page_servos[i]);
+//				PX4_ERR("mixer violated predicted value");
+//				return false;
+//			}
+//		}
+//	}
 
-	//PX4_INFO("ARMING TEST: DISARMING");
+//	//PX4_INFO("ARMING TEST: DISARMING");
 
-	starttime = hrt_absolute_time();
-	sleepcount = 0;
-	should_arm = false;
+//	starttime = hrt_absolute_time();
+//	sleepcount = 0;
+//	should_arm = false;
 
-	while (hrt_elapsed_time(&starttime) < 600000) {
+//	while (hrt_elapsed_time(&starttime) < 600000) {
 
-		/* mix */
-		mixed = mixer_group.mix(&outputs[0], output_max, nullptr);
+//		/* mix */
+//		mixed = mixer_group.mix(&outputs[0], output_max, nullptr);
 
-		pwm_limit_calc(should_arm, should_prearm, mixed, reverse_pwm_mask, r_page_servo_disarmed, r_page_servo_control_min,
-			       r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
+//		pwm_limit_calc(should_arm, should_prearm, mixed, reverse_pwm_mask, r_page_servo_disarmed, r_page_servo_control_min,
+//			       r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
 
-		//warnx("mixed %d outputs (max %d), values:", mixed, output_max);
-		for (unsigned i = 0; i < mixed; i++) {
+//		//warnx("mixed %d outputs (max %d), values:", mixed, output_max);
+//		for (unsigned i = 0; i < mixed; i++) {
 
-			//fprintf(stderr, "disarmed:\t %d: out: %8.4f, servo: %d \n", i, (double)outputs[i], (int)r_page_servos[i]);
+//			//fprintf(stderr, "disarmed:\t %d: out: %8.4f, servo: %d \n", i, (double)outputs[i], (int)r_page_servos[i]);
 
-			/* check mixed outputs to be zero during init phase */
-			if (r_page_servos[i] != r_page_servo_disarmed[i]) {
-				PX4_ERR("disarmed servo value mismatch");
-				return false;
-			}
-		}
+//			/* check mixed outputs to be zero during init phase */
+//			if (r_page_servos[i] != r_page_servo_disarmed[i]) {
+//				PX4_ERR("disarmed servo value mismatch");
+//				return false;
+//			}
+//		}
 
-		usleep(sleep_quantum_us);
-		sleepcount++;
+//		usleep(sleep_quantum_us);
+//		sleepcount++;
 
-		if (sleepcount % 10 == 0) {
-			//printf(".");
-			//fflush(stdout);
-		}
-	}
+//		if (sleepcount % 10 == 0) {
+//			//printf(".");
+//			//fflush(stdout);
+//		}
+//	}
 
-	//printf("\n");
+//	//printf("\n");
 
-	//PX4_INFO("ARMING TEST: REARMING: STARTING RAMP");
+//	//PX4_INFO("ARMING TEST: REARMING: STARTING RAMP");
 
-	starttime = hrt_absolute_time();
-	sleepcount = 0;
-	should_arm = true;
+//	starttime = hrt_absolute_time();
+//	sleepcount = 0;
+//	should_arm = true;
 
-	while (hrt_elapsed_time(&starttime) < 600000 + RAMP_TIME_US) {
+//	while (hrt_elapsed_time(&starttime) < 600000 + RAMP_TIME_US) {
 
-		/* mix */
-		mixed = mixer_group.mix(&outputs[0], output_max, nullptr);
+//		/* mix */
+//		mixed = mixer_group.mix(&outputs[0], output_max, nullptr);
 
-		pwm_limit_calc(should_arm, should_prearm, mixed, reverse_pwm_mask, r_page_servo_disarmed, r_page_servo_control_min,
-			       r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
+//		pwm_limit_calc(should_arm, should_prearm, mixed, reverse_pwm_mask, r_page_servo_disarmed, r_page_servo_control_min,
+//			       r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
 
-		//warnx("mixed %d outputs (max %d), values:", mixed, output_max);
-		for (unsigned i = 0; i < mixed; i++) {
-			/* predict value */
-			servo_predicted[i] = 1500 + outputs[i] * (r_page_servo_control_max[i] - r_page_servo_control_min[i]) / 2.0f;
+//		//warnx("mixed %d outputs (max %d), values:", mixed, output_max);
+//		for (unsigned i = 0; i < mixed; i++) {
+//			/* predict value */
+//			servo_predicted[i] = 1500 + outputs[i] * (r_page_servo_control_max[i] - r_page_servo_control_min[i]) / 2.0f;
 
-			/* check ramp */
+//			/* check ramp */
 
-			//fprintf(stderr, "ramp:\t %d: out: %8.4f, servo: %d \n", i, (double)outputs[i], (int)r_page_servos[i]);
+//			//fprintf(stderr, "ramp:\t %d: out: %8.4f, servo: %d \n", i, (double)outputs[i], (int)r_page_servos[i]);
 
-			if (hrt_elapsed_time(&starttime) < RAMP_TIME_US &&
-			    (r_page_servos[i] + 1 <= r_page_servo_disarmed[i] ||
-			     r_page_servos[i] > servo_predicted[i])) {
-				PX4_ERR("ramp servo value mismatch");
-				return false;
-			}
+//			if (hrt_elapsed_time(&starttime) < RAMP_TIME_US &&
+//			    (r_page_servos[i] + 1 <= r_page_servo_disarmed[i] ||
+//			     r_page_servos[i] > servo_predicted[i])) {
+//				PX4_ERR("ramp servo value mismatch");
+//				return false;
+//			}
 
-			/* check post ramp phase */
-			if (hrt_elapsed_time(&starttime) > RAMP_TIME_US &&
-			    abs(servo_predicted[i] - r_page_servos[i]) > 2) {
-				printf("\t %d: %8.4f predicted: %d, servo: %d\n", i, (double)outputs[i], servo_predicted[i], (int)r_page_servos[i]);
-				PX4_ERR("mixer violated predicted value");
-				return false;
-			}
-		}
+//			/* check post ramp phase */
+//			if (hrt_elapsed_time(&starttime) > RAMP_TIME_US &&
+//			    abs(servo_predicted[i] - r_page_servos[i]) > 2) {
+//				printf("\t %d: %8.4f predicted: %d, servo: %d\n", i, (double)outputs[i], servo_predicted[i], (int)r_page_servos[i]);
+//				PX4_ERR("mixer violated predicted value");
+//				return false;
+//			}
+//		}
 
-		usleep(sleep_quantum_us);
-		sleepcount++;
+//		usleep(sleep_quantum_us);
+//		sleepcount++;
 
-		if (sleepcount % 10 == 0) {
-			//	printf(".");
-			//	fflush(stdout);
-		}
-	}
+//		if (sleepcount % 10 == 0) {
+//			//	printf(".");
+//			//	fflush(stdout);
+//		}
+//	}
 
-	return true;
+//	return true;
+	return false;
 }
 
-static int
-mixer_callback(uintptr_t handle, uint8_t control_group, uint8_t control_index, float &control)
-{
-	if (control_group != 0) {
-		return -1;
-	}
+//static int
+//mixer_callback(uintptr_t handle, uint8_t control_group, uint8_t control_index, float &control)
+//{
+//	if (control_group != 0) {
+//		return -1;
+//	}
 
-	if (control_index >= (sizeof(actuator_controls) / sizeof(actuator_controls[0]))) {
-		return -1;
-	}
+//	if (control_index >= (sizeof(actuator_controls) / sizeof(actuator_controls[0]))) {
+//		return -1;
+//	}
 
-	control = actuator_controls[control_index];
+//	control = actuator_controls[control_index];
 
-	if (should_prearm && control_group == actuator_controls_s::GROUP_INDEX_ATTITUDE &&
-	    control_index == actuator_controls_s::INDEX_THROTTLE) {
-		control = NAN_VALUE;
-	}
+//	if (should_prearm && control_group == actuator_controls_s::GROUP_INDEX_ATTITUDE &&
+//	    control_index == actuator_controls_s::INDEX_THROTTLE) {
+//		control = NAN_VALUE;
+//	}
 
-	return 0;
-}
+//	return 0;
+//}

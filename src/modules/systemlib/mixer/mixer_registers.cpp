@@ -32,27 +32,85 @@
  ****************************************************************************/
 
 /**
- * @file mixer_types.h
+ * @file mixer_registers.cpp
  *
- * Descripition of mixer types
+ * Programmable multi-channel mixer library.
  */
 
+#include <px4_config.h>
 
-#ifndef _SYSTEMLIB_MIXER_TYPE_ID_H
-#define _SYSTEMLIB_MIXER_TYPE_ID_H value
+#include <sys/types.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <poll.h>
+#include <errno.h>
+#include <stdio.h>
+#include <math.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <systemlib/err.h>
 
-#include "mixer_types.h"
-
-extern const char *const MIXER_TYPE_ID[MIXER_TYPES_COUNT];
-const char *const MIXER_TYPE_ID[MIXER_TYPES_COUNT] = {
-	"NONE",
-	"NULL",
-	"SIMPLE",
-	"MULTIROTOR",
-	"HELICOPTER",
-	"SIMPLE_INPUT",
-	"MULTIROTOR_ROTOR",
-};
+#include "mixer_registers.h"
 
 
-#endif
+static const char *register_group_names_table[MixerRegisterGroups::MIXER_REGISTER_GROUPS_MAX] = MIXER_REG_GROUP_NAMES;
+
+
+/****************************************************************************/
+
+MixerRegisterGroup::MixerRegisterGroup()
+	: group_required(false)
+	, _group_size(0)
+	, _group_data(nullptr)
+	, _read_only(true)
+{
+
+}
+
+void
+MixerRegisterGroup::setGroup(unsigned group_size, mixer_register_val_u *group_data, bool read_only)
+{
+	_group_size = group_size;
+	_group_data = group_data;
+	_read_only = read_only;
+}
+
+
+/****************************************************************************/
+
+MixerRegisterGroups::MixerRegisterGroups()
+	: register_groups()
+{
+}
+
+bool MixerRegisterGroups::validRegister(mixer_register_ref_s *regref)
+{
+	if (regref->group >= MIXER_REGISTER_GROUPS_MAX) {
+		return false;
+	}
+
+	if (regref->index >= register_groups[regref->group].groupSize()) {
+		return false;
+	}
+
+	return true;
+}
+
+const char *MixerRegisterGroups::getGroupName(int index)
+{
+	if (index >= MixerRegisterGroups::MIXER_REGISTER_GROUPS_MAX) {
+		return nullptr;
+	}
+
+	return register_group_names_table[index];
+}
+
+//#if defined(MIXER_TUNING)
+//#if !defined(MIXER_REMOTE)
+//#endif //MIXER_REMOTE
+
+
+//#endif //defined(MIXER_TUNING)

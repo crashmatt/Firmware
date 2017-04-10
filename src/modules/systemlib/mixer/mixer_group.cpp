@@ -58,9 +58,9 @@
 //#include <debug.h>
 //#define debug(fmt, args...)	syslog(fmt "\n", ##args)
 
-MixerGroup::MixerGroup(ControlCallback control_cb, uintptr_t cb_handle) :
-	Mixer(control_cb, cb_handle),
-	_first(nullptr)
+MixerGroup::MixerGroup(MixerRegisterGroups *reg_groups)
+	: _first(nullptr)
+	, _reg_groups(reg_groups)
 {
 }
 
@@ -69,8 +69,8 @@ MixerGroup::~MixerGroup()
 	reset();
 }
 
-void
-MixerGroup::add_mixer(Mixer *mixer)
+int
+MixerGroup::append_mixer(Mixer *mixer)
 {
 	Mixer **mpp;
 
@@ -82,6 +82,7 @@ MixerGroup::add_mixer(Mixer *mixer)
 
 	*mpp = mixer;
 	mixer->_next = nullptr;
+	return 0;
 }
 
 void
@@ -102,18 +103,17 @@ MixerGroup::reset()
 	}
 }
 
-unsigned
-MixerGroup::mix(float *outputs, unsigned space, uint16_t *status_reg)
+uint16_t
+MixerGroup::mix_group()
 {
 	Mixer	*mixer = _first;
-	unsigned index = 0;
 
-	while ((mixer != nullptr) && (index < space)) {
-		index += mixer->mix(outputs + index, space - index, status_reg);
+	while (mixer != nullptr) {
+		mixer->mix(_reg_groups);
 		mixer = mixer->_next;
 	}
 
-	return index;
+	return 0;
 }
 
 /*
@@ -122,54 +122,54 @@ MixerGroup::mix(float *outputs, unsigned space, uint16_t *status_reg)
  * The only other existing implementation is MultirotorMixer, which ignores the trim value
  * and returns _rotor_count.
  */
-unsigned
-MixerGroup::set_trims(int16_t *values, unsigned n)
-{
-	Mixer	*mixer = _first;
-	unsigned index = 0;
+//unsigned
+//MixerGroup::set_trims(int16_t *values, unsigned n)
+//{
+//	Mixer	*mixer = _first;
+//	unsigned index = 0;
 
-	while ((mixer != nullptr) && (index < n)) {
-		/* convert from integer to float */
-		float offset = (float)values[index] / 10000;
+//	while ((mixer != nullptr) && (index < n)) {
+//		/* convert from integer to float */
+//		float offset = (float)values[index] / 10000;
 
-		/* to be safe, clamp offset to range of [-100, 100] usec */
-		if (offset < -0.2f) { offset = -0.2f; }
+//		/* to be safe, clamp offset to range of [-100, 100] usec */
+//		if (offset < -0.2f) { offset = -0.2f; }
 
-		if (offset >  0.2f) { offset =  0.2f; }
+//		if (offset >  0.2f) { offset =  0.2f; }
 
-		debug("set trim: %d, offset: %5.3f", values[index], (double)offset);
-		index += mixer->set_trim(offset);
-		mixer = mixer->_next;
-	}
+//		debug("set trim: %d, offset: %5.3f", values[index], (double)offset);
+//		index += mixer->set_trim(offset);
+//		mixer = mixer->_next;
+//	}
 
-	return index;
-}
+//	return index;
+//}
 
-void
-MixerGroup::set_thrust_factor(float val)
-{
-	Mixer	*mixer = _first;
+//void
+//MixerGroup::set_thrust_factor(float val)
+//{
+//	Mixer	*mixer = _first;
 
-	while (mixer != nullptr) {
-		mixer->set_thrust_factor(val);
-		mixer = mixer->_next;
-	}
+//	while (mixer != nullptr) {
+//		mixer->set_thrust_factor(val);
+//		mixer = mixer->_next;
+//	}
 
-}
+//}
 
-uint16_t
-MixerGroup::get_saturation_status()
-{
-	Mixer	*mixer = _first;
-	uint16_t sat = 0;
+//uint16_t
+//MixerGroup::get_saturation_status()
+//{
+//	Mixer	*mixer = _first;
+//	uint16_t sat = 0;
 
-	while (mixer != nullptr) {
-		sat |= mixer->get_saturation_status();
-		mixer = mixer->_next;
-	}
+//	while (mixer != nullptr) {
+//		sat |= mixer->get_saturation_status();
+//		mixer = mixer->_next;
+//	}
 
-	return sat;
-}
+//	return sat;
+//}
 
 unsigned
 MixerGroup::count()
@@ -185,124 +185,95 @@ MixerGroup::count()
 	return index;
 }
 
-void
-MixerGroup::groups_required(uint32_t &groups)
-{
-	Mixer	*mixer = _first;
+//void
+//MixerGroup::groups_required(uint32_t &groups)
+//{
+//	Mixer	*mixer = _first;
 
-	while (mixer != nullptr) {
-		mixer->groups_required(groups);
-		mixer = mixer->_next;
-	}
-}
+//	while (mixer != nullptr) {
+//		mixer->groups_required(groups);
+//		mixer = mixer->_next;
+//	}
+//}
 
-int
-MixerGroup::load_from_buf(const char *buf, unsigned &buflen)
-{
-	int ret = -1;
-	const char *end = buf + buflen;
+//int
+//MixerGroup::load_from_buf(const char *buf, unsigned &buflen)
+//{
+//    int ret = -1;
+//	const char *end = buf + buflen;
 
-	/*
-	 * Loop until either we have emptied the buffer, or we have failed to
-	 * allocate something when we expected to.
-	 */
-	while (buflen > 0) {
-		Mixer *m = nullptr;
-		const char *p = end - buflen;
-		unsigned resid = buflen;
+//	/*
+//	 * Loop until either we have emptied the buffer, or we have failed to
+//	 * allocate something when we expected to.
+//	 */
+//	while (buflen > 0) {
+//		Mixer *m = nullptr;
+//		const char *p = end - buflen;
+//		unsigned resid = buflen;
 
-		/*
-		 * Use the next character as a hint to decide which mixer class to construct.
-		 */
-		switch (*p) {
-		case 'Z':
-			m = NullMixer::from_text(p, resid);
-			break;
+//		/*
+//		 * Use the next character as a hint to decide which mixer class to construct.
+//		 */
+//		switch (*p) {
+//		case 'Z':
+//			m = NullMixer::from_text(p, resid);
+//			break;
 
-		case 'M':
-			m = SimpleMixer::from_text(_control_cb, _cb_handle, p, resid);
-			break;
+//		case 'M':
+//			m = SimpleMixer::from_text(_control_cb, _cb_handle, p, resid);
+//			break;
 
-		case 'R':
-			m = MultirotorMixer::from_text(_control_cb, _cb_handle, p, resid);
-			break;
+//		case 'R':
+//			m = MultirotorMixer::from_text(_control_cb, _cb_handle, p, resid);
+//			break;
 
-		case 'H':
-			m = HelicopterMixer::from_text(_control_cb, _cb_handle, p, resid);
-			break;
+//		case 'H':
+//			m = HelicopterMixer::from_text(_control_cb, _cb_handle, p, resid);
+//			break;
 
-		default:
-			/* it's probably junk or whitespace, skip a byte and retry */
-			buflen--;
-			continue;
-		}
+//		default:
+//			/* it's probably junk or whitespace, skip a byte and retry */
+//			buflen--;
+//			continue;
+//		}
 
-		/*
-		 * If we constructed something, add it to the group.
-		 */
-		if (m != nullptr) {
-			add_mixer(m);
+//		/*
+//		 * If we constructed something, add it to the group.
+//		 */
+//		if (m != nullptr) {
+//			add_mixer(m);
 
-			/* we constructed something */
-			ret = 0;
+//			/* we constructed something */
+//			ret = 0;
 
-			/* only adjust buflen if parsing was successful */
-			buflen = resid;
-			debug("SUCCESS - buflen: %d", buflen);
+//			/* only adjust buflen if parsing was successful */
+//			buflen = resid;
+//			debug("SUCCESS - buflen: %d", buflen);
 
-		} else {
+//		} else {
 
-			/*
-			 * There is data in the buffer that we expected to parse, but it didn't,
-			 * so give up for now.
-			 */
-			break;
-		}
-	}
+//			/*
+//			 * There is data in the buffer that we expected to parse, but it didn't,
+//			 * so give up for now.
+//			 */
+//			break;
+//		}
+//	}
+//	/* nothing more in the buffer for us now */
+//	return ret;
+//}
 
-	/* nothing more in the buffer for us now */
-	return ret;
-}
+//void MixerGroup::set_max_delta_out_once(float delta_out_max)
+//{
+//	Mixer	*mixer = _first;
 
-void MixerGroup::set_max_delta_out_once(float delta_out_max)
-{
-	Mixer	*mixer = _first;
+//	while (mixer != nullptr) {
+//		mixer->set_max_delta_out_once(delta_out_max);
+//		mixer = mixer->_next;
+//	}
+//}
 
-	while (mixer != nullptr) {
-		mixer->set_max_delta_out_once(delta_out_max);
-		mixer = mixer->_next;
-	}
-}
-
-#if defined(MIXER_TUNING)
 #if !defined(MIXER_REMOTE)
-int
-MixerGroup::save_to_buf(char *buf, unsigned &buflen)
-{
-	Mixer       *mixer = _first;
-	char       *bufpos = buf;
-	unsigned    remaining = buflen;
-	unsigned    len;
-
-	while (mixer != nullptr) {
-		/* len is remaining buffer length but modified
-		 * to the actual bytes written to the buffer */
-		len = remaining;
-
-		if (mixer->to_text(bufpos, len) == 0) {
-			bufpos += len;
-			remaining -= len;
-
-		} else {
-			return -1;
-		}
-
-		mixer = mixer->_next;
-	}
-
-	return buflen -= remaining;
-}
-
 int16_t
 MixerGroup::group_param_count()
 {
@@ -310,7 +281,11 @@ MixerGroup::group_param_count()
 	int16_t param_count = 0;
 
 	while ((mixer != nullptr)) {
-		param_count += mixer->parameter_count();
+		if (mixer->getBaseType() == Mixer::MIXER_BASE_TYPE_OBJECT) {
+			MixerObject *mixobj = (MixerObject *) mixer;
+			param_count += mixobj->parameter_count();
+		}
+
 		mixer = mixer->_next;
 	}
 
@@ -321,26 +296,26 @@ MixerGroup::group_param_count()
 int16_t
 MixerGroup::group_get_param(mixer_param_s *param)
 {
-	Mixer	 *mixer = _first;
-	uint16_t remaining = param->index;
-	uint16_t mix_param_count;
-	param->mix_sub_index = -1;
-	param->mix_type = MIXER_TYPES_NONE;
-	strcpy(param->name, "NONE");
-	param->mix_index = 0;
+//	Mixer	 *mixer = _first;
+//	uint16_t remaining = param->index;
+//	uint16_t mix_param_count;
+//	param->mix_sub_index = -1;
+//	param->mix_type = MIXER_TYPES_NONE;
+//	strcpy(param->name, "NONE");
+//	param->mix_index = 0;
 
-	while ((mixer != nullptr)) {
-		mix_param_count = mixer->parameter_count();
+//	while ((mixer != nullptr)) {
+//		mix_param_count = mixer->parameter_count();
 
-		if (remaining < mix_param_count) {
-			param->param_index = remaining;
-			return mixer->get_parameter(param);
-		}
+//		if (remaining < mix_param_count) {
+//			param->param_index = remaining;
+//			return mixer->get_parameter(param);
+//		}
 
-		remaining -= mix_param_count;
-		param->mix_index++;
-		mixer = mixer->_next;
-	}
+//		remaining -= mix_param_count;
+//		param->mix_index++;
+//		mixer = mixer->_next;
+//	}
 
 	return -1;
 }
@@ -349,24 +324,24 @@ MixerGroup::group_get_param(mixer_param_s *param)
 int16_t
 MixerGroup::group_set_param(mixer_param_s *param)
 {
-	Mixer	 *mixer = _first;
-	uint16_t remaining = param->index;
-	uint16_t mix_param_count;
+//	Mixer	 *mixer = _first;
+//	uint16_t remaining = param->index;
+//	uint16_t mix_param_count;
 
-	param->mix_index = 0;
+//	param->mix_index = 0;
 
-	while ((mixer != nullptr)) {
-		mix_param_count = mixer->parameter_count();
+//	while ((mixer != nullptr)) {
+//		mix_param_count = mixer->parameter_count();
 
-		if (remaining < mix_param_count) {
-			param->param_index = remaining;
-			return mixer->set_parameter(param);
-		}
+//		if (remaining < mix_param_count) {
+//			param->param_index = remaining;
+//			return mixer->set_parameter(param);
+//		}
 
-		remaining -= mix_param_count;
-		param->mix_index++;
-		mixer = mixer->_next;
-	}
+//		remaining -= mix_param_count;
+//		param->mix_index++;
+//		mixer = mixer->_next;
+//	}
 
 	return -1;
 }
@@ -376,23 +351,20 @@ MixerGroup::group_set_param(mixer_param_s *param)
 int16_t
 MixerGroup::group_set_param_value(int16_t index, int16_t arrayIndex, float value)
 {
-	Mixer	 *mixer = _first;
-	uint16_t remaining = index;
-	uint16_t mix_param_count;
+//	Mixer	 *mixer = _first;
+//	uint16_t remaining = index;
+//	uint16_t mix_param_count;
 
-	while ((mixer != nullptr)) {
-		mix_param_count = mixer->parameter_count();
+//	while ((mixer != nullptr)) {
+//		mix_param_count = mixer->parameter_count();
 
-		if (remaining < mix_param_count) {
-			return mixer->set_param_value(remaining, arrayIndex, value);
-		}
+//		if (remaining < mix_param_count) {
+//			return mixer->set_param_value(remaining, arrayIndex, value);
+//		}
 
-		remaining -= mix_param_count;
-		mixer = mixer->_next;
-	}
+//		remaining -= mix_param_count;
+//		mixer = mixer->_next;
+//	}
 
 	return -1;
 }
-
-
-#endif //defined(MIXER_TUNING)

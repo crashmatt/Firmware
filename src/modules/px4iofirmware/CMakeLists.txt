@@ -83,9 +83,10 @@ set(srcs
         ../systemlib/up_cxxinitialize.c
         ../systemlib/perf_counter.c
         mixer.cpp
-        ../systemlib/mixer2/mixer_registers.cpp
-        ../systemlib/mixer2/mixer.cpp
-        ../systemlib/mixer2/mixer_group.cpp
+        ../systemlib/mixer/mixer_registers.cpp
+        ../systemlib/mixer/mixer.cpp
+        ../systemlib/mixer/mixer_group.cpp
+        ../systemlib/mixer/mixer_operators.cpp
         ../../lib/rc/st24.c
         ../../lib/rc/sumd.c
         ../../lib/rc/sbus.c

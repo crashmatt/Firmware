@@ -48,7 +48,7 @@
 #include <ctype.h>
 
 #include <systemlib/err.h>
-#include <systemlib/mixer2/mixer.h>
+#include <systemlib/mixer/mixer.h>
 #include <uORB/topics/actuator_controls.h>
 
 /**
@@ -201,39 +201,40 @@ usage(const char *reason)
 static int
 load(const char *devname, const char *fname, bool append)
 {
-	// sleep a while to ensure device has been set up
-	usleep(20000);
+	//TODO Re-implement mixer loading from file
+//	// sleep a while to ensure device has been set up
+//	usleep(20000);
 
-	int dev;
+//	int dev;
 
-	/* open the device */
-	if ((dev = px4_open(devname, 0)) < 0) {
-		PX4_ERR("can't open %s\n", devname);
-		return 1;
-	}
+//	/* open the device */
+//	if ((dev = px4_open(devname, 0)) < 0) {
+//		PX4_ERR("can't open %s\n", devname);
+//		return 1;
+//	}
 
-	/* reset mixers on the device, but not if appending */
-	if (!append) {
-		if (px4_ioctl(dev, MIXERIOCRESET, 0)) {
-			PX4_ERR("can't reset mixers on %s", devname);
-			return 1;
-		}
-	}
+//	/* reset mixers on the device, but not if appending */
+//	if (!append) {
+//		if (px4_ioctl(dev, MIXERIOCRESET, 0)) {
+//			PX4_ERR("can't reset mixers on %s", devname);
+//			return 1;
+//		}
+//	}
 
-	char buf[2048];
+//	char buf[2048];
 
-	if (load_mixer_file(fname, &buf[0], sizeof(buf)) < 0) {
-		PX4_ERR("can't load mixer file: %s", fname);
-		return 1;
-	}
+//	if (load_mixer_file(fname, &buf[0], sizeof(buf)) < 0) {
+//		PX4_ERR("can't load mixer file: %s", fname);
+//		return 1;
+//	}
 
-	/* Pass the buffer to the device */
-	int ret = px4_ioctl(dev, MIXERIOCLOADBUF, (unsigned long)buf);
+//	/* Pass the buffer to the device */
+//	int ret = px4_ioctl(dev, MIXERIOCLOADBUF, (unsigned long)buf);
 
-	if (ret < 0) {
-		PX4_ERR("failed to load mixers from %s", fname);
-		return 1;
-	}
+//	if (ret < 0) {
+//		PX4_ERR("failed to load mixers from %s", fname);
+//		return 1;
+//	}
 
 	return 0;
 }

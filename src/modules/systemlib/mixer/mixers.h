@@ -32,63 +32,22 @@
  ****************************************************************************/
 
 /**
- * @file mixer_parameters.h
+ * @file mixers.h
  *
- * Descripition of mixer parameters
+ * Collection of all mixer headers
  */
 
+#ifndef _SYSTEMLIB_MIXER_MIXERS_H
+#define _SYSTEMLIB_MIXER_MIXERS_H value
 
-#ifndef _SYSTEMLIB_MIXER_IO_H
-#define _SYSTEMLIB_MIXER_IO_H value
+#include <px4_config.h>
+#include "drivers/drv_mixer.h"
 
-//#include "mixer_types.h"
+#include "mixer_registers.h"
+#include "mixer.h"
+#include "mixer_operators.h"
 
-
-#define MIXER_IO_MIXER_TYPE_COUNT 7
-
-#ifndef MIXER_NONE_INPUT_COUNT
-#define MIXER_NONE_INPUT_COUNT 0
-#define MIXER_NONE_OUTPUT_COUNT 0
-#endif
-
-#ifndef MIXER_NULL_INPUT_COUNT
-#define MIXER_NULL_INPUT_COUNT 1
-#define MIXER_NULL_OUTPUT_COUNT 0
-#endif
-
-#ifndef MIXER_SIMPLE_INPUT_COUNT
-#define MIXER_SIMPLE_INPUT_COUNT 0
-#define MIXER_SIMPLE_OUTPUT_COUNT 1
-#endif
-
-#ifndef MIXER_MULTI_INPUT_COUNT
-#define MIXER_MULTI_INPUT_COUNT 4
-#define MIXER_MULTI_OUTPUT_COUNT 0
-#endif
-
-#ifndef MIXER_HELI_INPUT_COUNT
-#define MIXER_HELI_INPUT_COUNT 4
-#define MIXER_HELI_OUTPUT_COUNT 6
-#endif
-
-#ifndef MIXER_SIMPLE_INPUT_INPUT_COUNT
-#define MIXER_SIMPLE_INPUT_INPUT_COUNT 1
-#define MIXER_SIMPLE_INPUT_OUTPUT_COUNT 0
-#endif
-
-#ifndef MIXER_ROTOR_INPUT_COUNT
-#define MIXER_ROTOR_INPUT_COUNT 0
-#define MIXER_ROTOR_OUTPUT_COUNT 1
-#endif
+#include "mixer_types.h"
 
 
-#ifndef MIXER_INPUT_COUNTS
-#define MIXER_INPUT_COUNTS {MIXER_NONE_INPUT_COUNT, MIXER_NULL_INPUT_COUNT, MIXER_SIMPLE_INPUT_COUNT, MIXER_MULTI_INPUT_COUNT, MIXER_HELI_INPUT_COUNT, MIXER_SIMPLE_INPUT_INPUT_COUNT, MIXER_ROTOR_INPUT_COUNT}
-#endif
-
-#ifndef MIXER_OUTPUT_COUNTS
-#define MIXER_OUTPUT_COUNTS {MIXER_NONE_OUTPUT_COUNT, MIXER_NULL_OUTPUT_COUNT, MIXER_SIMPLE_OUTPUT_COUNT, MIXER_MULTI_OUTPUT_COUNT, MIXER_HELI_OUTPUT_COUNT, MIXER_SIMPLE_INPUT_OUTPUT_COUNT, MIXER_ROTOR_OUTPUT_COUNT}
-#endif
-
-
-#endif
+#endif  //_SYSTEMLIB_MIXER_MIXERS_H

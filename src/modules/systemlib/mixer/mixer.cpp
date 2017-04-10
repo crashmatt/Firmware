@@ -34,7 +34,7 @@
 /**
  * @file mixer.cpp
  *
- * Programmable multi-channel mixer library.
+ * Generic mixer library.
  */
 
 #include <px4_config.h>
@@ -58,193 +58,44 @@
 #define debug(fmt, args...)	do { } while(0)
 //#define debug(fmt, args...)	do { printf("[mixer] " fmt "\n", ##args); } while(0)
 
-Mixer::Mixer(ControlCallback control_cb, uintptr_t cb_handle) :
-	_next(nullptr),
-	_control_cb(control_cb),
-	_cb_handle(cb_handle)
+Mixer::Mixer(mixer_base_header_s *mixdata)
+	: _mixdata(mixdata)
 {
-}
-
-float
-Mixer::get_control(uint8_t group, uint8_t index)
-{
-	float	value;
-
-	_control_cb(_cb_handle, group, index, value);
-
-	return value;
-}
-
-
-float
-Mixer::scale(const mixer_scaler_s &scaler, float input)
-{
-	float output;
-
-	if (input < 0.0f) {
-		output = (input * scaler.negative_scale) + scaler.offset;
-
-	} else {
-		output = (input * scaler.positive_scale) + scaler.offset;
-	}
-
-	if (output > scaler.max_output) {
-		output = scaler.max_output;
-
-	} else if (output < scaler.min_output) {
-		output = scaler.min_output;
-	}
-
-	return output;
-}
-
-int
-Mixer::scale_check(struct mixer_scaler_s &scaler)
-{
-	if (scaler.offset > 1.001f) {
-		return 1;
-	}
-
-	if (scaler.offset < -1.001f) {
-		return 2;
-	}
-
-	if (scaler.min_output > scaler.max_output) {
-		return 3;
-	}
-
-	if (scaler.min_output < -1.001f) {
-		return 4;
-	}
-
-	if (scaler.max_output > 1.001f) {
-		return 5;
-	}
-
-	return 0;
-}
-
-const char *
-Mixer::findtag(const char *buf, unsigned &buflen, char tag)
-{
-	while (buflen >= 2) {
-		if ((buf[0] == tag) && (buf[1] == ':')) {
-			return buf;
-		}
-
-		buf++;
-		buflen--;
-	}
-
-	return nullptr;
-}
-
-const char *
-Mixer::skipline(const char *buf, unsigned &buflen)
-{
-	const char *p;
-
-	/* if we can find a CR or NL in the buffer, skip up to it */
-	if ((p = (const char *)memchr(buf, '\r', buflen)) || (p = (const char *)memchr(buf, '\n', buflen))) {
-		/* skip up to it AND one beyond - could be on the NUL symbol now */
-		buflen -= (p - buf) + 1;
-		return p + 1;
-	}
-
-	return nullptr;
-}
-
-bool
-Mixer::string_well_formed(const char *buf, unsigned &buflen)
-{
-	/* enforce that the mixer ends with a new line */
-	for (int i = buflen - 1; i >= 0; i--) {
-		if (buf[i] == '\0') {
-			continue;
-		}
-
-		/* require a space or newline at the end of the buffer, fail on printable chars */
-		if (buf[i] == '\n' || buf[i] == '\r') {
-			/* found a line ending, so no split symbols / numbers. good. */
-			return true;
-		}
-
-	}
-
-	debug("pre-parser rejected: No newline in buf");
-
-	return false;
 }
 
 /****************************************************************************/
 
-NullMixer::NullMixer() :
-	Mixer(nullptr, 0)
+MixerOperator::MixerOperator(mixer_data_operator_s *mixdata)
+	: Mixer((mixer_base_header_s *) mixdata)
 {
+	_mixdata->base_type = MIXER_BASE_TYPE_OPERATOR;
 }
 
-unsigned
-NullMixer::mix(float *outputs, unsigned space, uint16_t *status_reg)
+MixerOperator::~MixerOperator()
 {
-	if (space > 0) {
-		*outputs = 0.0f;
-		return 1;
+	if (_mixdata != nullptr) {
+		free((mixer_data_operator_s *) _mixdata);
 	}
-
-	return 0;
 }
 
-uint16_t
-NullMixer::get_saturation_status()
+/****************************************************************************/
+
+MixerFunction::MixerFunction(mixer_data_function_s *mixdata)
+	: Mixer((mixer_base_header_s *) mixdata)
 {
-	return 0;
+	_mixdata->base_type = MIXER_BASE_TYPE_FUNCTION;
 }
 
-void
-NullMixer::groups_required(uint32_t &groups)
+MixerFunction::~MixerFunction()
 {
-
 }
 
-NullMixer *
-NullMixer::from_text(const char *buf, unsigned &buflen)
+
+/****************************************************************************/
+
+
+MixerObject::MixerObject(mixer_data_object_s *mixdata)
+	: Mixer((mixer_base_header_s *) mixdata)
 {
-	NullMixer *nm = nullptr;
-
-	/* enforce that the mixer ends with a new line */
-	if (!string_well_formed(buf, buflen)) {
-		return nullptr;
-	}
-
-	if ((buflen >= 2) && (buf[0] == 'Z') && (buf[1] == ':')) {
-		nm = new NullMixer;
-		buflen -= 2;
-	}
-
-	return nm;
+	_mixdata->base_type = MIXER_BASE_TYPE_FUNCTION;
 }
-
-
-#if defined(MIXER_TUNING)
-#if !defined(MIXER_REMOTE)
-int
-NullMixer::to_text(char *buf, unsigned &buflen)
-{
-	char *bufpos = buf;
-	unsigned remaining = buflen;
-
-	int written = snprintf(bufpos, remaining, "Z:\n");
-	bufpos += written;
-	remaining -= written;
-
-	if (remaining < 1) {
-		return -1;
-	}
-
-	buflen = bufpos - buf;
-	return 0;
-}
-#endif //MIXER_REMOTE
-
-
-#endif //defined(MIXER_TUNING)

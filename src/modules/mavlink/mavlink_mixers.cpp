@@ -49,7 +49,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <systemlib/mixer2/mixer_types.h>
+#include <systemlib/mixer/mixer_types.h>
 #include <drivers/drv_mixer.h>
 
 #define MOUNTPOINT PX4_ROOTFSDIR "/fs/microsd"
