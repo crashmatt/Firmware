@@ -89,3 +89,37 @@ Mixer *MixerFactory::factory(mixer_base_header_s *mixdata)
 		break;
 	}
 }
+
+
+int
+MixerFactory::from_buffer(MixerGroup *group, uint8_t *mixbuff, int bufflen)
+{
+	mixer_base_header_s *mixdata;
+	Mixer *new_mixer;
+
+	int remaining = bufflen;
+
+	while (remaining > 0) {
+		mixdata = (mixer_base_header_s *) &mixbuff[bufflen - remaining];
+
+		if (mixdata->data_size == 0) {
+			return remaining;
+		}
+
+		if (mixdata->mixer_type == MIXER_TYPES_NONE) {
+			return remaining;
+		}
+
+		new_mixer = factory(mixdata);
+
+		if (new_mixer == nullptr) {
+			return remaining;
+		}
+
+		group->append_mixer(new_mixer);
+
+		remaining -= mixdata->data_size;
+	}
+
+	return remaining;
+}

@@ -50,15 +50,26 @@
 #include "mixer_types.h"
 
 
-/**
- * Create a new mixer according to the data passed to it
- *
- * @return			pointer to new mixer with base class Mixer
- */
 class __EXPORT MixerFactory
 {
 public:
+	/**
+	 * Create a new mixer according to the data passed to it
+	 *
+	 * @param[in]   mixdata     mixer data structure describing the whole mixer
+	 * @return                  pointer to new mixer with base class Mixer
+	 */
 	static Mixer *factory(mixer_base_header_s *mixdata);
+
+	/**
+	 * Create new mixer(s) from a data buffer and adds them into a MixerGroup.
+	 *
+	 * @param[in]   group       MixerGroup object to put parsed mixers in.
+	 * @param[in]   mixbuff     mixer data buffer describing all mixers
+	 * @param[in]   bufflen     buffer length.
+	 * @return                  Remaining buffer length not used.
+	 */
+	static int from_buffer(MixerGroup *group, uint8_t *mixbuff, int bufflen);
 };
 
 #endif  //_SYSTEMLIB_MIXER_MIXERS_H

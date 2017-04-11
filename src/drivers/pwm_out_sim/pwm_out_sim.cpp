@@ -418,6 +418,9 @@ PWMSim::task_main()
 	printf("size of mixer_register_ref_s:%u\n", sizeof(mixer_register_ref_s));
 	printf("size of mixer_data_operator_s:%u\n", sizeof(mixer_data_operator_s));
 
+	uint8_t *mixbuff = (uint8_t *) malloc(256);
+	int     mbindex = 0;
+
 	mixer_data_operator_s oppdata;
 	oppdata.header.mixer_type = MIXER_TYPES_ADD;
 
@@ -428,7 +431,9 @@ PWMSim::task_main()
 	oppdata.ref_right.index = actuator_controls_s::INDEX_PITCH;
 	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata.ref_out.index = 0;
-	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
+	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
+	mbindex += oppdata.header.data_size;
+//	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
 
 	oppdata.header.mixer_type = MIXER_TYPES_COPY;
 	oppdata.header.data_size = sizeof(mixer_data_operator_s);
@@ -438,7 +443,9 @@ PWMSim::task_main()
 	oppdata.ref_right.index = actuator_controls_s::INDEX_PITCH;
 	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata.ref_out.index = 1;
-	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
+	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
+	mbindex += oppdata.header.data_size;
+//    _mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
 
 	oppdata.header.mixer_type = MIXER_TYPES_ADD;
 	oppdata.header.data_size = sizeof(mixer_data_operator_s);
@@ -448,7 +455,9 @@ PWMSim::task_main()
 	oppdata.ref_right.index = actuator_controls_s::INDEX_YAW;
 	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata.ref_out.index = 3;
-	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
+	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
+	mbindex += oppdata.header.data_size;
+//    _mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
 
 	oppdata.header.mixer_type = MIXER_TYPES_COPY;
 	oppdata.header.data_size = sizeof(mixer_data_operator_s);
@@ -458,7 +467,19 @@ PWMSim::task_main()
 	oppdata.ref_right.index = actuator_controls_s::INDEX_THROTTLE;
 	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata.ref_out.index = 4;
-	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
+	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
+	mbindex += oppdata.header.data_size;
+//    _mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
+
+	// Finish buffer with a none mixer with no size to indicate the end of list
+	mixer_base_header_s end_mixer;
+	end_mixer.data_size = 0;
+	end_mixer.mixer_type = MIXER_TYPES_NONE;
+	memcpy(&mixbuff[mbindex], &end_mixer, sizeof(mixer_base_header_s));
+
+	MixerFactory::from_buffer(_mixers, mixbuff, mbindex);
+
+	free(mixbuff);
 
 	_groups_required = 0x01;
 

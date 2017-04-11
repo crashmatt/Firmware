@@ -87,6 +87,7 @@ set(srcs
         ../systemlib/mixer/mixer.cpp
         ../systemlib/mixer/mixer_group.cpp
         ../systemlib/mixer/mixer_operators.cpp
+        ../systemlib/mixer/mixers.cpp
         ../../lib/rc/st24.c
         ../../lib/rc/sumd.c
         ../../lib/rc/sbus.c
