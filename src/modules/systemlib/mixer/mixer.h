@@ -90,7 +90,6 @@
 #define _SYSTEMLIB_MIXER_MIXER_H value
 
 #include <px4_config.h>
-#include "drivers/drv_mixer.h"
 
 #include "mixer_registers.h"
 
@@ -137,6 +136,19 @@ public:
 	 */
 	uint16_t getMixerType() {if (_mixdata != nullptr) return _mixdata->mixer_type; else return MIXER_TYPES_NONE;}
 
+	/**
+	 * Get the mixer data size
+	 *
+	 * @return			Mixer data size
+	 */
+	uint16_t getDataSize() {if (_mixdata != nullptr) return _mixdata->data_size; else return 0;}
+
+	/**
+	 * Get the mixer data
+	 *
+	 * @return			Mixer data reference
+	 */
+	mixer_base_header_s *getMixerData() {return _mixdata;}
 
 	typedef enum {
 		MIXER_BASE_TYPE_NONE            = 0,
@@ -309,10 +321,33 @@ public:
 	int append_mixer(Mixer *mixer);
 
 
-	void setMixRegsGroup(MixerRegisterGroups *reg_groups) {_reg_groups = reg_groups;}
+	/**
+	 * Create new mixer(s) from a data buffer and adds them into a MixerGroup.
+	 * Does not take ownership of the buffer.  Copies buffer to new mixer data structure
+	 * ownder by mixer created by factory.
+	 * Supports streamed buffer with partial mixer data by returning the reminaing
+	 * unused bytes in the buffer
+	 *
+	 * @param[in]   group       MixerGroup object to put parsed mixers in.
+	 * @param[in]   mixbuff     mixer data buffer describing all mixers
+	 * @param[in]   bufflen     buffer length.
+	 * @return                  Remaining buffer length not used.
+	 */
+	int from_buffer(uint8_t *mixbuff, int bufflen);
 
-#if defined(MIXER_TUNING)
+	//	void setMixRegsGroup(MixerRegisterGroups *reg_groups) {_reg_groups = reg_groups;}
+
 #if !defined(MIXER_REMOTE)
+
+	/**
+	 * Copy all mixer data in sequence to a referenced buffer
+	 *
+	 * @param       mixbuff     buffer to put data
+	 * @param[in]   bufflen     Buffer length available.
+	 * @return                  Buffer length used. -1 if buffer overflowed.
+	 */
+	int to_buffer(uint8_t *mixbuff, int bufflen);
+
 	/**
 	* @brief                   Get the value of a mixer parameter
 	 *
@@ -348,8 +383,6 @@ public:
 	* @return              negative on error
 	 */
 	int16_t        group_set_param_value(int16_t index, int16_t arrayIndex, float value);
-
-#endif //defined(MIXER_TUNING)
 
 private:
 	Mixer				*_first;	/**< linked list of mixers */

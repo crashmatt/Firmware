@@ -486,7 +486,7 @@ PWMSim::task_main()
 //    memcpy(&mixbuff[mbindex], &end_mixer, sizeof(mixer_base_header_s));
 //    mbindex += sizeof(mixer_base_header_s);
 
-	int remaining = MixerFactory::from_buffer(_mixers, mixbuff, mbindex);
+	int remaining = _mixers->from_buffer(mixbuff, mbindex);
 	printf("Data remaining in buffer:%ubytes of buffer:%ubytes\n", remaining, mbindex);
 
 	free(mixbuff);

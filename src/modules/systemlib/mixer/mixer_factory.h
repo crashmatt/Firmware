@@ -32,22 +32,32 @@
  ****************************************************************************/
 
 /**
- * @file mixers.h
+ * @file mixer_factory.h
  *
  * Collection of all mixer headers as one easy and convienient place to put them.
  */
 
-#ifndef _SYSTEMLIB_MIXER_MIXERS_H
-#define _SYSTEMLIB_MIXER_MIXERS_H value
+#ifndef _SYSTEMLIB_MIXER_FACTORY_H
+#define _SYSTEMLIB_MIXER_FACTORY_H value
 
 #include <px4_config.h>
-#include "drivers/drv_mixer.h"
 
 #include "mixer_registers.h"
 #include "mixer.h"
-#include "mixer_operators.h"
-
-#include "mixer_types.h"
 
 
-#endif  //_SYSTEMLIB_MIXER_MIXERS_H
+class __EXPORT MixerFactory
+{
+public:
+	/**
+	 * Create a new mixer according to the data passed to it
+	* Expects to take ownership of the data as part of the object returned.
+	 *
+	 * @param[in]   mixdata     mixer data structure describing the whole mixer
+	 * @return                  pointer to new mixer with base class Mixer
+	 */
+	static Mixer *factory(mixer_base_header_s *mixdata);
+
+};
+
+#endif  //_SYSTEMLIB_MIXER_FACTORY_H

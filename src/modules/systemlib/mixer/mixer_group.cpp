@@ -52,6 +52,7 @@
 #include <unistd.h>
 
 #include "mixer.h"
+#include "mixer_factory.h"
 
 #define debug(fmt, args...)	do { } while(0)
 //#define debug(fmt, args...)	do { printf("[mixer] " fmt "\n", ##args); } while(0)
@@ -88,6 +89,68 @@ MixerGroup::append_mixer(Mixer *mixer)
 	mixer->_next = nullptr;
 	return 0;
 }
+
+
+
+int
+MixerGroup::from_buffer(uint8_t *mixbuff, int bufflen)
+{
+	mixer_base_header_s *mixdata;
+	Mixer *new_mixer;
+
+	int remaining = bufflen;
+
+	while (remaining > 0) {
+		mixdata = (mixer_base_header_s *) &mixbuff[bufflen - remaining];
+
+		if (mixdata->data_size == 0) {
+			return remaining;
+		}
+
+		if (mixdata->mixer_type == MIXER_TYPES_NONE) {
+			return remaining;
+		}
+
+		new_mixer = MixerFactory::factory(mixdata);
+
+		if (new_mixer == nullptr) {
+			return remaining;
+		}
+
+		append_mixer(new_mixer);
+
+		remaining -= mixdata->data_size;
+	}
+
+	return remaining;
+}
+
+
+int
+MixerGroup::to_buffer(uint8_t *mixbuff, int bufflen)
+{
+	int data_size;
+	int buffpos = 0;
+	Mixer *mix = _first;
+	mixer_base_header_s *mixheader;
+
+	while (mix != nullptr) {
+		mixheader = mix->getMixerData();
+		data_size = mixheader->data_size;
+
+		//Check for buffer overflow
+		if ((buffpos + data_size) >= bufflen) {
+			return -1;
+		}
+
+		memcpy(&mixbuff[buffpos], mixheader, data_size);
+		buffpos += data_size;
+		mix = mix->_next;
+	}
+
+	return buffpos;
+}
+
 
 void
 MixerGroup::reset()
