@@ -37,24 +37,7 @@
  * Programmable multi-channel mixer library.
  */
 
-#include <px4_config.h>
-
-#include <sys/types.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <errno.h>
-#include <stdio.h>
-#include <math.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <systemlib/err.h>
-
 #include "mixer_registers.h"
-
 
 static const char *register_group_names_table[MixerRegisterGroups::MIXER_REGISTER_GROUPS_MAX] = MIXER_REG_GROUP_NAMES;
 

@@ -90,9 +90,9 @@
 #define _SYSTEMLIB_MIXER_MIXER_H value
 
 #include <px4_config.h>
+#include "drivers/drv_mixer.h"
 
 #include "mixer_registers.h"
-
 #include "mixer_types.h"
 
 /****************************************************************************/

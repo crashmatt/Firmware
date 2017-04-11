@@ -40,8 +40,6 @@
 #ifndef _SYSTEMLIB_MIXER_FACTORY_H
 #define _SYSTEMLIB_MIXER_FACTORY_H value
 
-#include <px4_config.h>
-
 #include "mixer_registers.h"
 #include "mixer.h"
 

@@ -37,21 +37,10 @@
  * Static mixer factory for generating mixer objects from mixer data structures
  */
 
-#include <px4_config.h>
-
 #include <sys/types.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <errno.h>
-#include <stdio.h>
-#include <math.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <systemlib/err.h>
+
 
 #include "mixer_factory.h"
 #include "mixers.h"
@@ -64,6 +53,10 @@ Mixer *MixerFactory::factory(mixer_base_header_s *mixdata)
 
 	switch (mixdata->mixer_type) {
 	case MIXER_TYPES_ADD : {
+			if (mixdata->data_size != sizeof(mixer_data_operator_s)) {
+				return nullptr;
+			}
+
 			mixer_data_operator_s *opdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
 			memcpy(opdata, mixdata, sizeof(mixer_data_operator_s));
 			return new MixerAdd((mixer_data_operator_s *) opdata);
@@ -71,6 +64,10 @@ Mixer *MixerFactory::factory(mixer_base_header_s *mixdata)
 		}
 
 	case MIXER_TYPES_ADD_CONST : {
+			if (mixdata->data_size != sizeof(mixer_data_const_operator_s)) {
+				return nullptr;
+			}
+
 			mixer_data_const_operator_s *opdata = (mixer_data_const_operator_s *) malloc(sizeof(mixer_data_const_operator_s));
 			memcpy(opdata, mixdata, sizeof(mixer_data_const_operator_s));
 			return new MixerAddConst((mixer_data_const_operator_s *) opdata);
@@ -78,6 +75,10 @@ Mixer *MixerFactory::factory(mixer_base_header_s *mixdata)
 		}
 
 	case MIXER_TYPES_COPY : {
+			if (mixdata->data_size != sizeof(mixer_data_operator_s)) {
+				return nullptr;
+			}
+
 			mixer_data_operator_s *opdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
 			std::memcpy(opdata, mixdata, sizeof(mixer_data_operator_s));
 			return new MixerCopy((mixer_data_operator_s *) opdata);
@@ -85,6 +86,10 @@ Mixer *MixerFactory::factory(mixer_base_header_s *mixdata)
 		}
 
 	case MIXER_TYPES_MULTIPLY : {
+			if (mixdata->data_size != sizeof(mixer_data_operator_s)) {
+				return nullptr;
+			}
+
 			mixer_data_operator_s *opdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
 			memcpy(opdata, mixdata, sizeof(mixer_data_operator_s));
 			return new MixerMultiply((mixer_data_operator_s *) opdata);

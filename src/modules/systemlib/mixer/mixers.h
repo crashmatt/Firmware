@@ -40,9 +40,6 @@
 #ifndef _SYSTEMLIB_MIXER_MIXERS_H
 #define _SYSTEMLIB_MIXER_MIXERS_H value
 
-#include <px4_config.h>
-#include "drivers/drv_mixer.h"
-
 #include "mixer_registers.h"
 #include "mixer.h"
 #include "mixer_operators.h"

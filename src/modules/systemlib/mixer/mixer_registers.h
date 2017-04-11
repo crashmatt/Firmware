@@ -43,8 +43,7 @@
 #ifndef _SYSTEMLIB_MIXER_REGISTERS_H
 #define _SYSTEMLIB_MIXER_REGISTERS_H value
 
-#include <px4_config.h>
-#include "drivers/drv_mixer.h"
+#include <stdint.h>
 
 typedef enum {
 	MIXER_REGISTER_TYPE_NONE = 0,
