@@ -49,6 +49,12 @@
 
 #include "mixer_types.h"
 
+
+/**
+ * Create a new mixer according to the data passed to it
+ *
+ * @return			pointer to new mixer with base class Mixer
+ */
 class __EXPORT MixerFactory
 {
 public:

@@ -55,7 +55,6 @@
 
 #include "mixers.h"
 
-
 Mixer *MixerFactory::factory(mixer_base_header_s *mixdata)
 {
 	if (mixdata == nullptr) {
@@ -63,17 +62,26 @@ Mixer *MixerFactory::factory(mixer_base_header_s *mixdata)
 	}
 
 	switch (mixdata->mixer_type) {
-	case MIXER_TYPES_ADD :
-		return new MixerAdd((mixer_data_operator_s *) mixdata);
-		break;
+	case MIXER_TYPES_ADD : {
+			mixer_data_operator_s *opdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
+			memcpy(opdata, mixdata, sizeof(mixer_data_operator_s));
+			return new MixerAdd((mixer_data_operator_s *) opdata);
+			break;
+		}
 
-	case MIXER_TYPES_COPY :
-		return new MixerCopy((mixer_data_operator_s *) mixdata);
-		break;
+	case MIXER_TYPES_COPY : {
+			mixer_data_operator_s *opdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
+			std::memcpy(opdata, mixdata, sizeof(mixer_data_operator_s));
+			return new MixerCopy((mixer_data_operator_s *) opdata);
+			break;
+		}
 
-	case MIXER_TYPES_MULTIPLY :
-		return new MixerMultiply((mixer_data_operator_s *) mixdata);
-		break;
+	case MIXER_TYPES_MULTIPLY : {
+			mixer_data_operator_s *opdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
+			memcpy(opdata, mixdata, sizeof(mixer_data_operator_s));
+			return new MixerMultiply((mixer_data_operator_s *) opdata);
+			break;
+		}
 
 	case MIXER_TYPES_NONE :
 	default:

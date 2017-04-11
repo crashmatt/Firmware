@@ -411,17 +411,6 @@ PWMSim::task_main()
 		_mixers = new MixerGroup(&_reg_groups);
 	}
 
-	mixer_data_operator_s *oppdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
-	oppdata->ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata->ref_left.index = actuator_controls_s::INDEX_ROLL;
-	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata->ref_right.index = actuator_controls_s::INDEX_FLAPS;
-	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppdata->ref_out.index = 0;
-	oppdata->header.mixer_type = MIXER_TYPES_ADD;
-	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) oppdata));
-//    _mixers->append_mixer(new MixerAdd(oppdata));
-
 	printf("size of Mixer:%u\n", sizeof(Mixer));
 	printf("size of MixerOperator:%u\n", sizeof(MixerOperator));
 	printf("size of MixerAdd:%u\n", sizeof(MixerAdd));
@@ -429,25 +418,47 @@ PWMSim::task_main()
 	printf("size of mixer_register_ref_s:%u\n", sizeof(mixer_register_ref_s));
 	printf("size of mixer_data_operator_s:%u\n", sizeof(mixer_data_operator_s));
 
-	oppdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
-	oppdata->ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata->ref_left.index = actuator_controls_s::INDEX_ROLL;
-	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata->ref_right.index = actuator_controls_s::INDEX_YAW;
-	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppdata->ref_out.index = 3;
-	oppdata->header.mixer_type = MIXER_TYPES_ADD;
-	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) oppdata));
-//	_mixers->append_mixer(new MixerAdd(oppdata));
+	mixer_data_operator_s oppdata;
+	oppdata.header.mixer_type = MIXER_TYPES_ADD;
 
-	oppdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
-	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata->ref_right.index = actuator_controls_s::INDEX_PITCH;
-	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppdata->ref_out.index = 1;
-	oppdata->header.mixer_type = MIXER_TYPES_COPY;
-	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) oppdata));
-//	_mixers->append_mixer(new MixerCopy(oppdata));
+	oppdata.header.data_size = sizeof(mixer_data_operator_s);
+	oppdata.ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata.ref_left.index = actuator_controls_s::INDEX_ROLL;
+	oppdata.ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata.ref_right.index = actuator_controls_s::INDEX_PITCH;
+	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata.ref_out.index = 0;
+	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
+
+	oppdata.header.mixer_type = MIXER_TYPES_COPY;
+	oppdata.header.data_size = sizeof(mixer_data_operator_s);
+	oppdata.ref_left.group = 0x00;
+	oppdata.ref_left.index = 0x00;
+	oppdata.ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata.ref_right.index = actuator_controls_s::INDEX_PITCH;
+	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata.ref_out.index = 1;
+	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
+
+	oppdata.header.mixer_type = MIXER_TYPES_ADD;
+	oppdata.header.data_size = sizeof(mixer_data_operator_s);
+	oppdata.ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata.ref_left.index = actuator_controls_s::INDEX_ROLL;
+	oppdata.ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata.ref_right.index = actuator_controls_s::INDEX_YAW;
+	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata.ref_out.index = 3;
+	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
+
+	oppdata.header.mixer_type = MIXER_TYPES_COPY;
+	oppdata.header.data_size = sizeof(mixer_data_operator_s);
+	oppdata.ref_left.group = 0x00;
+	oppdata.ref_left.index = 0x00;
+	oppdata.ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata.ref_right.index = actuator_controls_s::INDEX_THROTTLE;
+	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata.ref_out.index = 4;
+	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
 
 	_groups_required = 0x01;
 
@@ -543,6 +554,11 @@ PWMSim::task_main()
 				break;
 			}
 
+			_controls[0].control[0] = 0.01;
+			_controls[0].control[1] = 0.02;
+			_controls[0].control[2] = 0.04;
+			_controls[0].control[3] = 0.08;
+
 			/* default ports to disabled by setting output to NaN */
 			for (size_t i = 0; i < sizeof(outputs.output) / sizeof(outputs.output[0]); i++) {
 				if (i >= num_outputs) {
@@ -556,7 +572,10 @@ PWMSim::task_main()
 
 			for (size_t i = 0; i < sizeof(outputs.output) / sizeof(outputs.output[0]); i++) {
 				if (outputs.output[i] != NAN) {
-					printf("out[%u]=%f", i, (double) outputs.output[i]);
+					if (i < 6) {
+						printf("OP[%u]=%0.2f ", i, (double) outputs.output[i]);
+					}
+
 					num_outputs = i + 1;
 				}
 			}
