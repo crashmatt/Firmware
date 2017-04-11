@@ -69,6 +69,13 @@ Mixer *MixerFactory::factory(mixer_base_header_s *mixdata)
 			break;
 		}
 
+	case MIXER_TYPES_ADD_CONST : {
+			mixer_data_const_operator_s *opdata = (mixer_data_const_operator_s *) malloc(sizeof(mixer_data_const_operator_s));
+			memcpy(opdata, mixdata, sizeof(mixer_data_const_operator_s));
+			return new MixerAddConst((mixer_data_const_operator_s *) opdata);
+			break;
+		}
+
 	case MIXER_TYPES_COPY : {
 			mixer_data_operator_s *opdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
 			std::memcpy(opdata, mixdata, sizeof(mixer_data_operator_s));

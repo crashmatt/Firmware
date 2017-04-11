@@ -433,7 +433,6 @@ PWMSim::task_main()
 	oppdata.ref_out.index = 0;
 	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
 	mbindex += oppdata.header.data_size;
-//	_mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
 
 	oppdata.header.mixer_type = MIXER_TYPES_COPY;
 	oppdata.header.data_size = sizeof(mixer_data_operator_s);
@@ -445,7 +444,6 @@ PWMSim::task_main()
 	oppdata.ref_out.index = 1;
 	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
 	mbindex += oppdata.header.data_size;
-//    _mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
 
 	oppdata.header.mixer_type = MIXER_TYPES_ADD;
 	oppdata.header.data_size = sizeof(mixer_data_operator_s);
@@ -457,7 +455,6 @@ PWMSim::task_main()
 	oppdata.ref_out.index = 3;
 	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
 	mbindex += oppdata.header.data_size;
-//    _mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
 
 	oppdata.header.mixer_type = MIXER_TYPES_COPY;
 	oppdata.header.data_size = sizeof(mixer_data_operator_s);
@@ -469,15 +466,28 @@ PWMSim::task_main()
 	oppdata.ref_out.index = 4;
 	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
 	mbindex += oppdata.header.data_size;
-//    _mixers->append_mixer(MixerFactory::factory((mixer_base_header_s *) &oppdata));
 
-	// Finish buffer with a none mixer with no size to indicate the end of list
-	mixer_base_header_s end_mixer;
-	end_mixer.data_size = 0;
-	end_mixer.mixer_type = MIXER_TYPES_NONE;
-	memcpy(&mixbuff[mbindex], &end_mixer, sizeof(mixer_base_header_s));
+	mixer_data_const_operator_s oppcdata;
+	oppcdata.header.mixer_type = MIXER_TYPES_ADD_CONST;
+	oppcdata.header.data_size = sizeof(mixer_data_const_operator_s);
+	oppcdata.constval.floatval = 0.5;
+	oppcdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppcdata.ref_out.index = 2;
+	oppcdata.ref_in.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppcdata.ref_in.index = actuator_controls_s::INDEX_ROLL;
+	memcpy(&mixbuff[mbindex], &oppcdata, oppcdata.header.data_size);
+	mbindex += oppcdata.header.data_size;
 
-	MixerFactory::from_buffer(_mixers, mixbuff, mbindex);
+
+//    // Finish buffer with a none mixer with no size to indicate the end of list
+//    mixer_base_header_s end_mixer;
+//    end_mixer.data_size = 0;
+//    end_mixer.mixer_type = MIXER_TYPES_NONE;
+//    memcpy(&mixbuff[mbindex], &end_mixer, sizeof(mixer_base_header_s));
+//    mbindex += sizeof(mixer_base_header_s);
+
+	int remaining = MixerFactory::from_buffer(_mixers, mixbuff, mbindex);
+	printf("Data remaining in buffer:%ubytes of buffer:%ubytes\n", remaining, mbindex);
 
 	free(mixbuff);
 

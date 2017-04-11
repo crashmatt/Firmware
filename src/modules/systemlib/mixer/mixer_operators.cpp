@@ -82,6 +82,26 @@ MixerAdd::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
 
 /****************************************************************************/
 
+MixerAddConst::MixerAddConst(mixer_data_const_operator_s *mixdata)
+	: MixerConstOperator(mixdata)
+{
+}
+
+uint16_t
+MixerAddConst::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
+{
+	mixer_data_const_operator_s *mixdata = (mixer_data_const_operator_s *) _mixdata;
+	float *dest = reg_groups->getFloatValue(mixdata->ref_out);
+	float *value = reg_groups->getFloatValue(mixdata->ref_in);
+
+	*dest = *value + mixdata->constval.floatval;
+//    printf("dest=%f value=%f constval=%f\n", (double) *dest, (double) *value, mixdata->constval.floatval);
+	return 0;
+}
+
+
+/****************************************************************************/
+
 MixerCopy::MixerCopy(mixer_data_operator_s *mixdata)
 	: MixerOperator(mixdata)
 {

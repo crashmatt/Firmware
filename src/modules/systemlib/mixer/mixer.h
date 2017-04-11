@@ -139,10 +139,11 @@ public:
 
 
 	typedef enum {
-		MIXER_BASE_TYPE_NONE        = 0,
-		MIXER_BASE_TYPE_OPERATOR    = 1,
-		MIXER_BASE_TYPE_FUNCTION    = 2,
-		MIXER_BASE_TYPE_OBJECT      = 3,
+		MIXER_BASE_TYPE_NONE            = 0,
+		MIXER_BASE_TYPE_OPERATOR        = 1,
+		MIXER_BASE_TYPE_CONST_OPERATOR  = 2,
+		MIXER_BASE_TYPE_FUNCTION        = 3,
+		MIXER_BASE_TYPE_OBJECT          = 4,
 	} MIXER_BASE_TYPE;
 
 protected:
@@ -173,6 +174,23 @@ public:
 protected:
 private:
 };
+
+/****************************************************************************/
+
+/**
+ * Abstract class defining mixers that are operators
+ */
+class __EXPORT MixerConstOperator : public Mixer
+{
+public:
+	MixerConstOperator(mixer_data_const_operator_s *mixdata);
+	~MixerConstOperator();
+
+	uint16_t getBaseType()  {return MIXER_BASE_TYPE_CONST_OPERATOR;}
+protected:
+private:
+};
+
 
 /****************************************************************************/
 

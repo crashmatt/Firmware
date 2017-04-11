@@ -77,6 +77,23 @@ MixerOperator::~MixerOperator()
 	}
 }
 
+
+/****************************************************************************/
+
+MixerConstOperator::MixerConstOperator(mixer_data_const_operator_s *mixdata)
+	: Mixer((mixer_base_header_s *) mixdata)
+{
+}
+
+MixerConstOperator::~MixerConstOperator()
+{
+	if (_mixdata != nullptr) {
+		free((mixer_data_const_operator_s *) _mixdata);
+	}
+}
+
+
+
 /****************************************************************************/
 
 MixerFunction::MixerFunction(mixer_data_function_s *mixdata)

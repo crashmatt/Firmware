@@ -91,6 +91,14 @@ __attribute__((packed))
 	mixer_register_ref_s    ref_out;
 } mixer_data_operator_s;
 
+typedef struct
+__attribute__((packed))
+{
+	mixer_base_header_s     header;
+	mixer_register_ref_s    ref_in;
+	mixer_register_val_u    constval;
+	mixer_register_ref_s    ref_out;
+} mixer_data_const_operator_s;
 
 typedef struct
 __attribute__((packed))

@@ -108,6 +108,23 @@ protected:
 private:
 };
 
+
+/****************************************************************************/
+
+/**
+ * Mixer for add constant to reference value
+ */
+class __EXPORT MixerAddConst : public MixerConstOperator
+{
+public:
+	MixerAddConst(mixer_data_const_operator_s *mixdata);
+
+	uint16_t		mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type = MIXER_REGISTER_TYPE_NONE);
+protected:
+private:
+};
+
+
 /****************************************************************************/
 
 /**
