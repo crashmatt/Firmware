@@ -51,7 +51,7 @@ class __EXPORT MixerParameters
 {
 public:
 	MixerParameters(mixer_parameters_s *param_data);
-	MixerParameters();
+	~MixerParameters();
 
 	uint16_t valueCount() {return _param_data->parameter_value_count;}
 	uint16_t paramCount() {return _param_data->parameter_count;}

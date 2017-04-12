@@ -175,6 +175,9 @@ __attribute__((packed))
 } mixer_parameter_metadata_s;
 
 
+/****************************************************************************/
+// Structure for passing parameters with metadata.  Used to communicate with mavlink
+
 struct mixer_param_s {
 	int16_t         index;
 	int16_t         mix_index;

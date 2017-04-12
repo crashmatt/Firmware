@@ -52,3 +52,11 @@ MixerParameters::MixerParameters(mixer_parameters_s *param_data)
 	_param_data = (mixer_parameters_s *) malloc(datasize);
 	memcpy(_param_data, param_data, datasize);
 }
+
+
+MixerParameters::~MixerParameters()
+{
+	if (_param_data != nullptr) {
+		free(_param_data);
+	}
+}
