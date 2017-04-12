@@ -84,6 +84,7 @@ set(srcs
         ../systemlib/perf_counter.c
         mixer.cpp
         ../systemlib/mixer/mixer_registers.cpp
+        ../systemlib/mixer/mixer_parameters.cpp
         ../systemlib/mixer/mixer.cpp
         ../systemlib/mixer/mixer_group.cpp
         ../systemlib/mixer/mixer_operators.cpp

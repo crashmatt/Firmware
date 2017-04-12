@@ -32,84 +32,62 @@
  ****************************************************************************/
 
 /**
- * @file mixer_load.c
+ * @file mixer_data_parser.cpp
  *
- * Programmable multi-channel mixer library.
  */
 
-#include <px4_config.h>
+#include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <systemlib/err.h>
 
-#include "mixer_load.h"
+#include "mixer_data_parser.h"
+#include "mixers.h"
 
-int load_mixer_file(const char *fname, char *buf, unsigned maxlen)
+/****************************************************************************/
+
+MixerDataParser::MixerDataParser(MixerGroup *mix_group, MixerParameters *mix_params, MixerRegisterGroups *mix_regs)
+	: _mix_group(mix_group)
+	, _mix_params(mix_params)
+	, _mix_regs(mix_regs)
 {
-	FILE		*fp;
-	char		line[120];
-
-	/* open the mixer definition file */
-	fp = fopen(fname, "r");
-
-	if (fp == NULL) {
-		warnx("file not found");
-		return -1;
-	}
-
-	/* read valid lines from the file into a buffer */
-	buf[0] = '\0';
-
-	for (;;) {
-
-		/* get a line, bail on error/EOF */
-		line[0] = '\0';
-
-//		if (fgets(line, sizeof(line), fp) == NULL) {
-//			break;
-//		}
-
-		/* if the line doesn't look like a mixer definition line, skip it */
-		if ((strlen(line) < 2) || !isupper(line[0]) || (line[1] != ':')) {
-			continue;
-		}
-
-		/* compact whitespace in the buffer */
-		char *t, *f;
-
-		for (f = line; *f != '\0'; f++) {
-			/* scan for space characters */
-			if (*f == ' ') {
-				/* look for additional spaces */
-				t = f + 1;
-
-				while (*t == ' ') {
-					t++;
-				}
-
-				if (*t == '\0') {
-					/* strip trailing whitespace */
-					*f = '\0';
-
-				} else if (t > (f + 1)) {
-					memmove(f + 1, t, strlen(t) + 1);
-				}
-			}
-		}
-
-		/* if the line is too long to fit in the buffer, bail */
-		if ((strlen(line) + strlen(buf) + 1) >= maxlen) {
-			warnx("line too long");
-			fclose(fp);
-			return -1;
-		}
-
-		/* add the line to the buffer */
-		strcat(buf, line);
-	}
-
-	fclose(fp);
-	return 0;
 }
 
+int
+MixerDataParser::parse_buffer(uint8_t *buff, int bufflen)
+{
+	uint8_t *pos    = 0;
+	mixer_datablock_header_s *blk_hdr;
+	int remaining;
+
+	while (pos < (buff - bufflen - sizeof(mixer_datablock_header_s))) {
+		blk_hdr = (mixer_datablock_header_s *) pos;
+
+		if (blk_hdr->start == MIXER_DATABLOCK_START) {
+			remaining = bufflen - (blk_hdr->data - buff);
+
+			if (remaining >= blk_hdr->size) {
+				switch (blk_hdr->type) {
+				case MIXER_DATABLOCK_MIXER: {
+						_mix_group->from_buffer((uint8_t *) &blk_hdr->data, blk_hdr->size);
+						// No check on remaining here.  Just assume everything was consumed
+						break;
+					}
+
+				case MIXER_DATABLOCK_PARAMETER: {
+						break;
+					}
+
+				default:
+					break;
+				}
+
+				//Jump over the block regardless of correct parsing or not.
+				pos = blk_hdr->data + blk_hdr->size;
+			}
+
+		} else {
+			pos++;
+		}
+	}
+
+	return bufflen - (buff - pos);
+}

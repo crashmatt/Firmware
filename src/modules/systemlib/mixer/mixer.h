@@ -57,16 +57,11 @@
  * Mixing basics
  * =============
  *
- *
  * Scaling
  * -------
  *
- *
  * Mixing
  * ------
- *
- * Mixing behaviour varies based on the specific mixer class; each
- * mixer class describes its behaviour in more detail.
  *
  *
  * Controls

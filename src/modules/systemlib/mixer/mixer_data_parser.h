@@ -45,16 +45,50 @@
 
 #include <stdint.h>
 
+class MixerGroup;
+class MixerParameters;
+class MixerRegisterGroups;
+
+/****************************************************************************/
+// Mixer datablock structures
+
+typedef enum {
+	MIXER_DATABLOCK_NONE = 0,
+	MIXER_DATABLOCK_MIXER,
+	MIXER_DATABLOCK_GROUP,
+	MIXER_DATABLOCK_GROUP_METADATA,
+	MIXER_DATABLOCK_PARAMETER,
+	MIXER_DATABLOCK_VARIABLE_COUNT,
+	MIXER_DATABLOCK_PARAMETER_METADATA,
+	MIXER_DATABLOCK_VARIABLE_METADATA,
+} mixer_datablocks_e;
+
+#define MIXER_DATABLOCK_START 0x55AA
+
+typedef struct
+__attribute__((packed))
+{
+	uint32_t    start;
+	uint16_t    size;   //Size of the block not including the header.
+	uint16_t    type;
+	uint8_t     data[0];
+} mixer_datablock_header_s;
+
 /**
- * Class responsible for I/O parsing and containing data from the parsing.
+ * Class responsible for I/O parsing of mixers and related data.
  *
  */
 class __EXPORT MixerDataParser
 {
 public:
-	MixerDataParser();
+	MixerDataParser(MixerGroup *mix_group, MixerParameters *mix_params, MixerRegisterGroups *mix_regs);
+
+	int parse_buffer(uint8_t *buff, int bufflen);
 
 protected:
+	MixerGroup          *_mix_group;
+	MixerParameters     *_mix_params;
+	MixerRegisterGroups *_mix_regs;
 };
 
 //#define MIXER_REG_GROUP_NAMES {"CNTRLS_PRIMARY", "CONTROL1", "CONTROL2", "CONTROL3", "OUTPUTS", "PARAMETERS", "CONSTANTS", "STACK"}

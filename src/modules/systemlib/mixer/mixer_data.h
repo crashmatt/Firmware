@@ -136,28 +136,7 @@ __attribute__((packed))
 
 
 /****************************************************************************/
-// Mixer datablock structures
-
-typedef enum {
-	MIXER_DATABLOCK_NONE = 0,
-	MIXER_DATABLOCK_MIXERS,
-	MIXER_DATABLOCK_GROUPS,
-	MIXER_DATABLOCK_PARAMETERS,
-	MIXER_DATABLOCK_PARAMETER_METADATA,
-} mixer_datablocks_e;
-
-
-typedef struct
-__attribute__((packed))
-{
-	uint16_t    size;   //Size of the block not including the header.
-	uint16_t    type;
-} mixer_datablock_header_s;
-
-
-/****************************************************************************/
 // Mixer parameter structures
-
 
 typedef struct
 __attribute__((packed))
@@ -173,6 +152,22 @@ __attribute__((packed))
 	uint16_t        array_size;
 	char            name[16];
 } mixer_parameter_metadata_s;
+
+
+/****************************************************************************/
+// Mixer variable structures
+
+typedef struct
+__attribute__((packed))
+{
+	uint32_t                variable_count;
+} mixer_variables_s;
+
+typedef struct
+__attribute__((packed))
+{
+	char            name[20];
+} mixer_variable_metadata_s;
 
 
 /****************************************************************************/

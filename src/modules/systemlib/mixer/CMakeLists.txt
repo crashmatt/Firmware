@@ -49,6 +49,7 @@ px4_add_module(
                 mixer_operators.cpp
                 mixer_factory.cpp
                 mixer_parameters.cpp
+                mixer_data_parser.cpp
 	DEPENDS
 		platforms__common
 #		mixer_gen
