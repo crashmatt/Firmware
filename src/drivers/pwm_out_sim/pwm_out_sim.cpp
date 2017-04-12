@@ -421,6 +421,25 @@ PWMSim::task_main()
 	uint8_t *mixbuff = (uint8_t *) malloc(256);
 	int     mbindex = 0;
 
+	mixer_parameters_s paramdata;
+	mixer_register_val_u *regval;
+
+	paramdata.parameter_count = 1;
+	paramdata.parameter_value_count = 1;
+	memcpy(mixbuff, &paramdata, sizeof(paramdata));
+	mbindex += sizeof(paramdata);
+	regval = (mixer_register_val_u *) &mixbuff[mbindex];
+	regval->floatval = 0.66666;
+
+	//MixerParameters object copying parameter data in buffer
+	// TODO MixerParameters should be made in factory to enable data size checking
+	MixerParameters mixparams((mixer_parameters_s *) mixbuff);
+
+	_reg_groups.register_groups[MixerRegisterGroups::REGS_PARAMS].setGroup(mixparams.paramCount(),
+			mixparams.paramValues(), true);
+
+	mbindex = 0;
+
 	mixer_data_operator_s oppdata;
 	oppdata.header.mixer_type = MIXER_TYPES_ADD;
 
@@ -453,6 +472,17 @@ PWMSim::task_main()
 	oppdata.ref_right.index = actuator_controls_s::INDEX_YAW;
 	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata.ref_out.index = 3;
+	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
+	mbindex += oppdata.header.data_size;
+
+	oppdata.header.mixer_type = MIXER_TYPES_MULTIPLY;
+	oppdata.header.data_size = sizeof(mixer_data_operator_s);
+	oppdata.ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata.ref_left.index = actuator_controls_s::INDEX_THROTTLE;
+	oppdata.ref_right.group = MixerRegisterGroups::REGS_PARAMS;
+	oppdata.ref_right.index = 0;
+	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata.ref_out.index = 5;
 	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
 	mbindex += oppdata.header.data_size;
 

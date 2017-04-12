@@ -32,34 +32,32 @@
  ****************************************************************************/
 
 /**
- * @file mixer_parameters.h
+ * @file mixer_parameters.cpp
  *
- * Descripition of mixer parameters
+ * Object owning all global mixer parameters.
+ * Initialized from mixer parameters data structure.
  */
 
+#include <sys/types.h>
+#include <stdint.h>
+#include <stdlib.h>
 
-#ifndef _SYSTEMLIB_MIXER_PARAMETERS_H
-#define _SYSTEMLIB_MIXER_PARAMETERS_H value
+#include "mixer_parameters.h"
+#include "mixers.h"
 
-#include "mixer_data.h"
+/****************************************************************************/
 
-/**
- * Class containing a reference to a mixer register array and a size for the array
- *
- */
-class __EXPORT MixerParameters
+MixerParameters::MixerParameters(mixer_parameters_s *param_data)
+	: _param_data(nullptr)
 {
-public:
-	MixerParameters(mixer_parameters_s *param_data);
-	MixerParameters();
+	int datasize = sizeof(mixer_parameters_s) + (param_data->parameter_value_count * sizeof(mixer_register_val_u));
+	_param_data = (mixer_parameters_s *) malloc(datasize);
+	memcpy(_param_data, param_data, datasize);
+}
 
-	uint16_t valueCount() {return _param_data->parameter_value_count;}
-	uint16_t paramCount() {return _param_data->parameter_count;}
-	mixer_register_val_u *paramValues() {return _param_data->values;}
+//#if defined(MIXER_TUNING)
+//#if !defined(MIXER_REMOTE)
+//#endif //MIXER_REMOTE
 
-protected:
-	//* groupSize enables checks for access beyond the array maximum*/
-	mixer_parameters_s   *_param_data;
-};
 
-#endif
+//#endif //defined(MIXER_TUNING)

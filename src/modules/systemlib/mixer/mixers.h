@@ -40,6 +40,7 @@
 #ifndef _SYSTEMLIB_MIXER_MIXERS_H
 #define _SYSTEMLIB_MIXER_MIXERS_H value
 
+#include "mixer_parameters.h"
 #include "mixer_registers.h"
 #include "mixer.h"
 #include "mixer_operators.h"
