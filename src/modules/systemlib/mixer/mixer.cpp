@@ -37,26 +37,17 @@
  * Generic mixer library.
  */
 
-#include <px4_config.h>
+#include "mixer_config.h"
+#include "mixer.h"
 
-#include <sys/types.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <errno.h>
-#include <stdio.h>
-#include <math.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <systemlib/err.h>
-
-#include "mixer.h"
 
 #define debug(fmt, args...)	do { } while(0)
 //#define debug(fmt, args...)	do { printf("[mixer] " fmt "\n", ##args); } while(0)
+
+/****************************************************************************/
 
 Mixer::Mixer(mixer_base_header_s *mixdata)
 	: _mixdata(mixdata)
@@ -103,6 +94,9 @@ MixerFunction::MixerFunction(mixer_data_function_s *mixdata)
 
 MixerFunction::~MixerFunction()
 {
+	if (_mixdata != nullptr) {
+		free((mixer_data_function_s *) _mixdata);
+	}
 }
 
 
