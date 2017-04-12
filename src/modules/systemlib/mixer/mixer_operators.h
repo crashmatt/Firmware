@@ -89,8 +89,6 @@
 #ifndef _SYSTEMLIB_MIXER_OPERATORS_H
 #define _SYSTEMLIB_MIXER_OPERATORS_H value
 
-#include <px4_config.h>
-
 #include "mixer.h"
 
 /****************************************************************************/

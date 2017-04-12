@@ -32,23 +32,15 @@
  ****************************************************************************/
 
 /**
- * @file mixer_parameters.cpp
+ * @file mixer_config.h
  *
- * Object owning all global mixer parameters.
- * Initialized from mixer parameters data structure.
+ * includes from system for configuring mixers for a particular build
+ * Adapt this file to your particular system
  */
 
-#include <stdlib.h>
-#include <string.h>
+#ifndef _SYSTEMLIB_MIXER_CONFIG_H
+#define _SYSTEMLIB_MIXER_CONFIG_H value
 
-#include "mixer_parameters.h"
+#include <px4_config.h>   // FOR MIXER_REMOTE
 
-/****************************************************************************/
-
-MixerParameters::MixerParameters(mixer_parameters_s *param_data)
-	: _param_data(nullptr)
-{
-	int datasize = sizeof(mixer_parameters_s) + (param_data->parameter_value_count * sizeof(mixer_register_val_u));
-	_param_data = (mixer_parameters_s *) malloc(datasize);
-	memcpy(_param_data, param_data, datasize);
-}
+#endif

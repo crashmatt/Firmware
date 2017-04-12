@@ -126,19 +126,9 @@ struct mixer_simple_s {
 /**
  * Get the parameter at index
  * return the value and metadata
+ * arguments and return values in struct (mixer_param_s*) arg
+ * as defined in mixer
  */
-struct mixer_param_s {
-	int16_t         index;
-	int16_t         mix_index;
-	int16_t         mix_sub_index;
-	int16_t         param_index;
-	float           values[6];
-	char            name[17];
-	int8_t          mix_type;
-	int8_t          param_type;
-	int8_t          array_size;
-	uint8_t         flags;
-};
 #define   MIXERIOCGETPARAM		_MIXERIOC(11)
 
 

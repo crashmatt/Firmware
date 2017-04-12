@@ -48,7 +48,9 @@
 #include <ctype.h>
 
 #include <systemlib/err.h>
-#include <systemlib/mixer/mixer.h>
+#include <drivers/drv_mixer.h>
+#include <systemlib/mixer/mixer_types.h>
+#include <systemlib/mixer/mixer_data.h>
 #include <uORB/topics/actuator_controls.h>
 
 /**

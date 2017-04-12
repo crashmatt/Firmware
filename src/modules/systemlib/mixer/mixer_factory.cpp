@@ -40,7 +40,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <stdlib.h>
-
+#include <string.h>
 
 #include "mixer_factory.h"
 #include "mixers.h"
@@ -80,7 +80,7 @@ Mixer *MixerFactory::factory(mixer_base_header_s *mixdata)
 			}
 
 			mixer_data_operator_s *opdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
-			std::memcpy(opdata, mixdata, sizeof(mixer_data_operator_s));
+			memcpy(opdata, mixdata, sizeof(mixer_data_operator_s));
 			return new MixerCopy((mixer_data_operator_s *) opdata);
 			break;
 		}

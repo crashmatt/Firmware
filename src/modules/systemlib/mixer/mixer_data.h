@@ -175,4 +175,17 @@ __attribute__((packed))
 } mixer_parameter_metadata_s;
 
 
+struct mixer_param_s {
+	int16_t         index;
+	int16_t         mix_index;
+	int16_t         mix_sub_index;
+	int16_t         param_index;
+	float           values[6];
+	char            name[17];
+	int8_t          mix_type;
+	int8_t          param_type;
+	int8_t          array_size;
+	uint8_t         flags;
+};
+
 #endif
