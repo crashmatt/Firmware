@@ -107,7 +107,7 @@ public:
 	Mixer				*_next;
 
 	/**
-	 * Constructor.
+	* Constructor.
 	 *
 	 * @param control_cb		Callback invoked when reading controls.
 	 */

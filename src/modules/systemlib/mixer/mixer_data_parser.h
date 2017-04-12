@@ -40,75 +40,24 @@
  */
 
 
-#ifndef _SYSTEMLIB_MIXER_REGISTERS_H
-#define _SYSTEMLIB_MIXER_REGISTERS_H value
+#ifndef _SYSTEMLIB_MIXER_DATAPARSER_H
+#define _SYSTEMLIB_MIXER_DATAPARSER_H value
 
 #include <stdint.h>
-#include "mixer_data.h"
 
 /**
- * Class containing a reference to a mixer register array and a size for the array
+ * Class responsible for I/O parsing and containing data from the parsing.
  *
  */
-class __EXPORT MixerRegisterGroup
+class __EXPORT MixerDataParser
 {
 public:
-	MixerRegisterGroup();
-
-	uint16_t groupSize() {return _group_size;}
-
-	void setGroup(unsigned group_size, mixer_register_val_u *group_data, bool read_only);
-
-	mixer_register_val_u   *groupData() {return _group_data;}
-
-	bool                group_required;
-
-protected:
-	//* groupSize enables checks for access beyond the array maximum*/
-	uint16_t             _group_size;
-	mixer_register_val_u *_group_data;
-	bool                 _read_only;
-};
-
-#define MIXER_REG_GROUP_NAMES {"CNTRLS_PRIMARY", "CONTROL1", "CONTROL2", "CONTROL3", "OUTPUTS", "PARAMETERS", "CONSTANTS", "STACK"}
-
-/**
- * Class containing groups of mixer registers
- *
- */
-class __EXPORT MixerRegisterGroups
-{
-public:
-	typedef enum {
-		REGS_CONTROL_0     = 0,
-		REGS_CONTROL_1,
-		REGS_CONTROL_2,
-		REGS_CONTROL_3,
-		REGS_OUTPUTS,
-		REGS_PARAMS,
-		REGS_CONSTANTS,
-		REGS_STACK,
-		MIXER_REGISTER_GROUPS_MAX,
-	} MIXER_REG_GROUPS;
-
-	MixerRegisterGroups();
-
-	float *getFloatValue(mixer_register_ref_s regref) {return &(register_groups[regref.group].groupData()[regref.index].floatval);}
-
-	bool validRegister(mixer_register_ref_s *regref);
-
-
-	MixerRegisterGroup  register_groups[MIXER_REGISTER_GROUPS_MAX];
-
-#if !defined(MIXER_REMOTE)
-	const char *getGroupName(int index);
-#endif //MIXER_REMOTE
-
+	MixerDataParser();
 
 protected:
 };
 
+//#define MIXER_REG_GROUP_NAMES {"CNTRLS_PRIMARY", "CONTROL1", "CONTROL2", "CONTROL3", "OUTPUTS", "PARAMETERS", "CONSTANTS", "STACK"}
 
 
-
-#endif
+#endif  //_SYSTEMLIB_MIXER_DATAPARSER_H
