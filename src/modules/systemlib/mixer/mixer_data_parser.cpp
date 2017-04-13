@@ -84,7 +84,7 @@ MixerDataParser::parse_buffer(uint8_t *buff, int bufflen)
 					}
 
 				case MIXER_DATABLOCK_PARAMETER_METADATA: {
-//                    mixer_parameter_metadata_s
+						_mix_params->setParamMetaData((mixer_parameter_metadata_s *) blk_hdr->data);
 						break;
 					}
 
