@@ -421,107 +421,148 @@ PWMSim::task_main()
 
 	uint8_t *mixbuff = (uint8_t *) malloc(256);
 
-	MixerParameters mixparams;
+	MixerParameters mixparams   = MixerParameters();
+	MixerVariables  mixvars     = MixerVariables();
 
-	mixer_parameters_s params_size;
-	params_size.parameter_count = 1;
-	params_size.parameter_value_count = 1;
+	MixerDataParser mixparser = MixerDataParser(_mixers, &mixparams, &_reg_groups, &mixvars);
+	mixer_datablock_header_s *hdr = (mixer_datablock_header_s *) mixbuff;
 
-	mixparams.setParamsSize(&params_size, true);
+	// Create parameters datablock
+	printf("Create params datablock\n");
+	mixer_parameters_s *params_size = (mixer_parameters_s *) hdr->data;
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_PARAMETERS;
+	hdr->size = sizeof(mixer_parameters_s);
 
-	mixer_param_values_s *valdata = (mixer_param_values_s *) mixbuff;
+	params_size->parameter_count = 1;
+	params_size->parameter_value_count = 1;
+
+	printf("Parse params datablock\n");
+	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
+
+
+	// Create parameter value datablock
+	printf("Create param values datablock\n");
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_PARAM_VALUES;
+	mixer_param_values_s *valdata = (mixer_param_values_s *) hdr->data;
 	mixer_register_val_u *regval;
 
 	valdata->value_index = 0;
 	valdata->value_count = 1;
+	hdr->size = sizeof(mixer_param_values_s) + (valdata->value_count * sizeof(mixer_register_val_u)); //One value only
+
 	regval = (mixer_register_val_u *) valdata->values;
 	regval->floatval = 0.66666;
 
-	mixparams.setValues(valdata);
+	printf("Parse param values datablock\n");
+	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 
+	// Assign parameters to parameter register group
+	printf("Assign params to param register group\n");
 	_reg_groups.register_groups[MixerRegisterGroups::REGS_PARAMS].setGroup(mixparams.paramCount(),
 			mixparams.paramValues(), true);
 
-	int     mbindex = 0;
+	//TEST SINGLE MIXER DATABLOCK
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_MIXER;
+	hdr->size = sizeof(mixer_data_operator_s);
 
-	mixer_data_operator_s oppdata;
-	oppdata.header.mixer_type = MIXER_TYPES_ADD;
+	mixer_data_operator_s *oppdata = (mixer_data_operator_s *) hdr->data;
+	oppdata->header.mixer_type = MIXER_TYPES_ADD;
+	oppdata->header.data_size = sizeof(mixer_data_operator_s);
+	oppdata->ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_left.index = actuator_controls_s::INDEX_ROLL;
+	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_right.index = actuator_controls_s::INDEX_PITCH;
+	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata->ref_out.index = 0;
 
-	oppdata.header.data_size = sizeof(mixer_data_operator_s);
-	oppdata.ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata.ref_left.index = actuator_controls_s::INDEX_ROLL;
-	oppdata.ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata.ref_right.index = actuator_controls_s::INDEX_PITCH;
-	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppdata.ref_out.index = 0;
-	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
-	mbindex += oppdata.header.data_size;
+	printf("Parse mixer values datablock\n");
+	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 
-	oppdata.header.mixer_type = MIXER_TYPES_COPY;
-	oppdata.header.data_size = sizeof(mixer_data_operator_s);
-	oppdata.ref_left.group = 0x00;
-	oppdata.ref_left.index = 0x00;
-	oppdata.ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata.ref_right.index = actuator_controls_s::INDEX_PITCH;
-	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppdata.ref_out.index = 1;
-	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
-	mbindex += oppdata.header.data_size;
+	//TEST TWO MIXER DATABLOCKS IN ONE BUFFER LENGTH
+	int totalsize = 0;
 
-	oppdata.header.mixer_type = MIXER_TYPES_ADD;
-	oppdata.header.data_size = sizeof(mixer_data_operator_s);
-	oppdata.ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata.ref_left.index = actuator_controls_s::INDEX_ROLL;
-	oppdata.ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata.ref_right.index = actuator_controls_s::INDEX_YAW;
-	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppdata.ref_out.index = 3;
-	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
-	mbindex += oppdata.header.data_size;
+	hdr = (mixer_datablock_header_s *) mixbuff;
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_MIXER;
+	hdr->size = sizeof(mixer_data_operator_s);
+	oppdata = (mixer_data_operator_s *) hdr->data;
+	oppdata->header.mixer_type = MIXER_TYPES_COPY;
+	oppdata->header.data_size = sizeof(mixer_data_operator_s);
+	oppdata->ref_left.group = 0x00;
+	oppdata->ref_left.index = 0x00;
+	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_right.index = actuator_controls_s::INDEX_PITCH;
+	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata->ref_out.index = 1;
 
-	oppdata.header.mixer_type = MIXER_TYPES_MULTIPLY;
-	oppdata.header.data_size = sizeof(mixer_data_operator_s);
-	oppdata.ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata.ref_left.index = actuator_controls_s::INDEX_THROTTLE;
-	oppdata.ref_right.group = MixerRegisterGroups::REGS_PARAMS;
-	oppdata.ref_right.index = 0;
-	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppdata.ref_out.index = 5;
-	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
-	mbindex += oppdata.header.data_size;
+	totalsize = sizeof(mixer_datablock_header_s) + hdr->size;
 
-	oppdata.header.mixer_type = MIXER_TYPES_COPY;
-	oppdata.header.data_size = sizeof(mixer_data_operator_s);
-	oppdata.ref_left.group = 0x00;
-	oppdata.ref_left.index = 0x00;
-	oppdata.ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata.ref_right.index = actuator_controls_s::INDEX_THROTTLE;
-	oppdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppdata.ref_out.index = 4;
-	memcpy(&mixbuff[mbindex], &oppdata, oppdata.header.data_size);
-	mbindex += oppdata.header.data_size;
+	// move header to next buffer location
+	hdr = (mixer_datablock_header_s *)(mixbuff + totalsize);
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_MIXER;
+	hdr->size = sizeof(mixer_data_operator_s);
+	oppdata = (mixer_data_operator_s *) hdr->data;
+	oppdata->header.mixer_type = MIXER_TYPES_ADD;
+	oppdata->header.data_size = sizeof(mixer_data_operator_s);
+	oppdata->ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_left.index = actuator_controls_s::INDEX_ROLL;
+	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_right.index = actuator_controls_s::INDEX_YAW;
+	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata->ref_out.index = 2;
 
-	mixer_data_const_operator_s oppcdata;
-	oppcdata.header.mixer_type = MIXER_TYPES_ADD_CONST;
-	oppcdata.header.data_size = sizeof(mixer_data_const_operator_s);
-	oppcdata.constval.floatval = 0.5;
-	oppcdata.ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppcdata.ref_out.index = 2;
-	oppcdata.ref_in.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppcdata.ref_in.index = actuator_controls_s::INDEX_ROLL;
-	memcpy(&mixbuff[mbindex], &oppcdata, oppcdata.header.data_size);
-	mbindex += oppcdata.header.data_size;
+	totalsize += (sizeof(mixer_datablock_header_s) + hdr->size);
+	printf("Parse double mixer datablocks\n");
+	mixparser.parse_buffer(mixbuff, totalsize);
+
+	//TEST MULTIPLE MIXERS IN ONE MIXER DATABLOCK
+	hdr = (mixer_datablock_header_s *) mixbuff;
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_MIXER;
+	hdr->size = sizeof(mixer_data_operator_s);
+	totalsize = hdr->size;
+
+	oppdata = (mixer_data_operator_s *) hdr->data;
+	oppdata->header.mixer_type = MIXER_TYPES_MULTIPLY;
+	oppdata->header.data_size = sizeof(mixer_data_operator_s);
+	oppdata->ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_left.index = actuator_controls_s::INDEX_THROTTLE;
+	oppdata->ref_right.group = MixerRegisterGroups::REGS_PARAMS;
+	oppdata->ref_right.index = 0;
+	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata->ref_out.index = 3;
+
+	oppdata = (mixer_data_operator_s *)(hdr->data + hdr->size);
+	hdr->size += sizeof(mixer_data_operator_s);
+	oppdata->header.mixer_type = MIXER_TYPES_COPY;
+	oppdata->header.data_size = sizeof(mixer_data_operator_s);
+	oppdata->ref_left.group = 0x00;
+	oppdata->ref_left.index = 0x00;
+	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_right.index = actuator_controls_s::INDEX_THROTTLE;
+	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata->ref_out.index = 4;
+
+	mixer_data_const_operator_s *oppcdata = (mixer_data_const_operator_s *)(hdr->data + hdr->size);
+	hdr->size += sizeof(mixer_data_const_operator_s);
+	oppcdata->header.mixer_type = MIXER_TYPES_ADD_CONST;
+	oppcdata->header.data_size = sizeof(mixer_data_const_operator_s);
+	oppcdata->constval.floatval = 0.5;
+	oppcdata->ref_in.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppcdata->ref_in.index = actuator_controls_s::INDEX_YAW;
+	oppcdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppcdata->ref_out.index = 5;
+
+	printf("Parse multi mixers in single datablock with datasize:%u\n", hdr->size);
+	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 
 
-//    // Finish buffer with a none mixer with no size to indicate the end of list
-//    mixer_base_header_s end_mixer;
-//    end_mixer.data_size = 0;
-//    end_mixer.mixer_type = MIXER_TYPES_NONE;
-//    memcpy(&mixbuff[mbindex], &end_mixer, sizeof(mixer_base_header_s));
-//    mbindex += sizeof(mixer_base_header_s);
-
-	int remaining = _mixers->from_buffer(mixbuff, mbindex);
-	printf("Data remaining in buffer:%ubytes of buffer:%ubytes\n", remaining, mbindex);
+//	int remaining = _mixers->from_buffer(mixbuff, mbindex);
+//	printf("Data remaining in buffer:%ubytes of buffer:%ubytes\n", remaining, mbindex);
 
 	free(mixbuff);
 

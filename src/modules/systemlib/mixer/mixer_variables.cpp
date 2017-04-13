@@ -47,7 +47,7 @@
 
 MixerVariables::MixerVariables()
 	: _var_count(0)
-	, _variables(nullptr);
+	, _variables(nullptr)
 {
 }
 
@@ -60,22 +60,22 @@ MixerVariables::~MixerVariables()
 }
 
 int
-MixerVariables::set(uint16_t variable_count)
+MixerVariables::setVariableCount(uint16_t variable_count)
 {
 	//Only allow setting of size once
 	if (_variables != nullptr) {
 		return -1;
 	}
 
-	int param_data_size = param_sizes.parameter_value_count * sizeof(mixer_register_val_u);
+	_var_count = variable_count;
+	int variable_size = _var_count * sizeof(mixer_register_val_u);
 
-	_param_values = (mixer_register_val_u *)  malloc(param_data_size);
+	_variables = (mixer_register_val_u *)  malloc(variable_size);
 
-	if (_param_values == nullptr) {
+	if (_variables == nullptr) {
 		return -1;
 	}
 
-	memset(_param_values, 0, param_data_size);
-	_params = param_sizes;
-	return param_sizes.parameter_value_count;
+	memset(_variables, 0, variable_size);
+	return 0;
 }
