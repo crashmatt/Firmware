@@ -43,4 +43,6 @@
 
 #include <px4_config.h>   // FOR MIXER_REMOTE
 
+#define MIXERS_MAX_DATA_BUFFER_SIZE 96
+
 #endif

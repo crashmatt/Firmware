@@ -50,16 +50,18 @@
 class __EXPORT MixerParameters
 {
 public:
-	MixerParameters(mixer_parameters_s *param_data);
+	MixerParameters();
 	~MixerParameters();
 
-	uint16_t valueCount() {return _param_data->parameter_value_count;}
-	uint16_t paramCount() {return _param_data->parameter_count;}
-	mixer_register_val_u *paramValues() {return _param_data->values;}
+	int setParamsSize(mixer_parameters_s param_sizes);
+	int setValues(mixer_param_values_s *values);
+	uint16_t valueCount() {return _params.parameter_value_count;}
+	uint16_t paramCount() {return _params.parameter_count;}
+	mixer_register_val_u *paramValues() {return _param_values;}
 
 protected:
-	//* groupSize enables checks for access beyond the array maximum*/
-	mixer_parameters_s   *_param_data;
+	mixer_parameters_s     _params;
+	mixer_register_val_u   *_param_values;
 };
 
 #endif

@@ -420,26 +420,29 @@ PWMSim::task_main()
 	printf("size of mixer_data_operator_s:%u\n", sizeof(mixer_data_operator_s));
 
 	uint8_t *mixbuff = (uint8_t *) malloc(256);
-	int     mbindex = 0;
 
-	mixer_parameters_s paramdata;
+	MixerParameters mixparams;
+
+	mixer_parameters_s params_size;
+	params_size.parameter_count = 1;
+	params_size.parameter_value_count = 1;
+
+	mixparams.setParamsSize(params_size);
+
+	mixer_param_values_s *valdata = (mixer_param_values_s *) mixbuff;
 	mixer_register_val_u *regval;
 
-	paramdata.parameter_count = 1;
-	paramdata.parameter_value_count = 1;
-	memcpy(mixbuff, &paramdata, sizeof(paramdata));
-	mbindex += sizeof(paramdata);
-	regval = (mixer_register_val_u *) &mixbuff[mbindex];
+	valdata->value_index = 0;
+	valdata->value_count = 1;
+	regval = (mixer_register_val_u *) valdata->values;
 	regval->floatval = 0.66666;
 
-	//MixerParameters object copying parameter data in buffer
-	// TODO MixerParameters should be made in factory to enable data size checking
-	MixerParameters mixparams((mixer_parameters_s *) mixbuff);
+	mixparams.setValues(valdata);
 
 	_reg_groups.register_groups[MixerRegisterGroups::REGS_PARAMS].setGroup(mixparams.paramCount(),
 			mixparams.paramValues(), true);
 
-	mbindex = 0;
+	int     mbindex = 0;
 
 	mixer_data_operator_s oppdata;
 	oppdata.header.mixer_type = MIXER_TYPES_ADD;

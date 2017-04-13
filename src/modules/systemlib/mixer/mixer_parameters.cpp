@@ -45,18 +45,48 @@
 
 /****************************************************************************/
 
-MixerParameters::MixerParameters(mixer_parameters_s *param_data)
-	: _param_data(nullptr)
+MixerParameters::MixerParameters()
+	: _params( {0, 0})
+, _param_values(nullptr)
 {
-	int datasize = sizeof(mixer_parameters_s) + (param_data->parameter_value_count * sizeof(mixer_register_val_u));
-	_param_data = (mixer_parameters_s *) malloc(datasize);
-	memcpy(_param_data, param_data, datasize);
 }
 
 
 MixerParameters::~MixerParameters()
 {
-	if (_param_data != nullptr) {
-		free(_param_data);
+	if (_param_values != nullptr) {
+		free(_param_values);
 	}
+}
+
+int
+MixerParameters::setParamsSize(mixer_parameters_s param_sizes)
+{
+	//Only allow setting of size once
+	if (_param_values != nullptr) {
+		return -1;
+	}
+
+	int param_data_size = param_sizes.parameter_value_count * sizeof(mixer_register_val_u);
+
+	_param_values = (mixer_register_val_u *) malloc(param_data_size);
+
+	if (_param_values == nullptr) {
+		return -1;
+	}
+
+	memset(_param_values, 0, param_data_size);
+	_params = param_sizes;
+	return param_sizes.parameter_value_count;
+}
+
+int
+MixerParameters::setValues(mixer_param_values_s *values)
+{
+	if ((values->value_index + values->value_count) > _params.parameter_value_count) {
+		return -1;
+	}
+
+	memcpy(_param_values, values->values, values->value_count * sizeof(mixer_register_val_u));
+	return values->value_count;
 }

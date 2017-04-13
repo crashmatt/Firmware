@@ -143,8 +143,16 @@ __attribute__((packed))
 {
 	uint16_t                parameter_count;
 	uint16_t                parameter_value_count;
-	mixer_register_val_u    values[0];
 } mixer_parameters_s;
+
+typedef struct
+__attribute__((packed))
+{
+	uint16_t                value_index;
+	uint16_t                value_count;
+	mixer_register_val_u    values[0];
+} mixer_param_values_s;
+
 
 typedef struct
 __attribute__((packed))
