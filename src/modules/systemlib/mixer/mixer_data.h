@@ -157,6 +157,7 @@ __attribute__((packed))
 typedef struct
 __attribute__((packed))
 {
+	uint16_t        param_index;
 	uint16_t        array_size;
 	char            name[16];
 } mixer_parameter_metadata_s;

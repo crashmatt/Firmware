@@ -427,7 +427,7 @@ PWMSim::task_main()
 	params_size.parameter_count = 1;
 	params_size.parameter_value_count = 1;
 
-	mixparams.setParamsSize(params_size);
+	mixparams.setParamsSize(&params_size, true);
 
 	mixer_param_values_s *valdata = (mixer_param_values_s *) mixbuff;
 	mixer_register_val_u *regval;

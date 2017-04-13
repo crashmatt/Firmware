@@ -53,8 +53,9 @@ public:
 	MixerParameters();
 	~MixerParameters();
 
-	int setParamsSize(mixer_parameters_s param_sizes);
+	int setParamsSize(mixer_parameters_s *param_sizes, bool has_metadata);
 	int setValues(mixer_param_values_s *values);
+	int setParamMetaData(mixer_parameter_metadata_s *metadata);
 	uint16_t valueCount() {return _params.parameter_value_count;}
 	uint16_t paramCount() {return _params.parameter_count;}
 	mixer_register_val_u *paramValues() {return _param_values;}
@@ -62,6 +63,7 @@ public:
 protected:
 	mixer_parameters_s     _params;
 	mixer_register_val_u   *_param_values;
+	mixer_parameter_metadata_s  *_metadata;
 };
 
 #endif

@@ -32,70 +32,50 @@
  ****************************************************************************/
 
 /**
- * @file mixer.h
+ * @file mixer_parameters.cpp
  *
- * Structure for holding resgisters which a mixer uses for input and output.
- * Holds structure information on regsiters so a mixer can validate correct registers
- * Supports mixer parameters for reporting register metadata
+ * Object owning all global mixer parameters.
+ * Initialized from mixer parameters data structure.
  */
 
+#include <stdlib.h>
+#include <string.h>
 
-#ifndef _SYSTEMLIB_MIXER_DATAPARSER_H
-#define _SYSTEMLIB_MIXER_DATAPARSER_H value
-
-#include <stdint.h>
-
-class MixerGroup;
-class MixerParameters;
-class MixerRegisterGroups;
-class MixerVariables;
+#include "mixer_variables.h"
 
 /****************************************************************************/
-// Mixer datablock structures
 
-typedef enum {
-	MIXER_DATABLOCK_NONE = 0,
-	MIXER_DATABLOCK_MIXER,
-	MIXER_DATABLOCK_GROUP,
-	MIXER_DATABLOCK_GROUP_METADATA,
-	MIXER_DATABLOCK_PARAMETERS,
-	MIXER_DATABLOCK_PARAM_VALUES,
-	MIXER_DATABLOCK_VARIABLE_COUNT,
-	MIXER_DATABLOCK_PARAMETER_METADATA,
-	MIXER_DATABLOCK_VARIABLE_METADATA,
-} mixer_datablocks_e;
-
-#define MIXER_DATABLOCK_START 0x55AA
-
-typedef struct
-__attribute__((packed))
+MixerVariables::MixerVariables()
+	: _var_count(0)
+	, _variables(nullptr);
 {
-	uint32_t    start;
-	uint16_t    size;   //Size of the block not including the header.
-	uint16_t    type;
-	uint8_t     data[0];
-} mixer_datablock_header_s;
+}
 
-/**
- * Class responsible for I/O parsing of mixers and related data.
- *
- */
-class __EXPORT MixerDataParser
+
+MixerVariables::~MixerVariables()
 {
-public:
-	MixerDataParser(MixerGroup *mix_group, MixerParameters *mix_params, MixerRegisterGroups *mix_regs,
-			MixerVariables *mix_vars);
+	if (_variables != nullptr) {
+		free(_variables);
+	}
+}
 
-	int parse_buffer(uint8_t *buff, int bufflen);
+int
+MixerVariables::set(uint16_t variable_count)
+{
+	//Only allow setting of size once
+	if (_variables != nullptr) {
+		return -1;
+	}
 
-protected:
-	MixerGroup          *_mix_group;
-	MixerParameters     *_mix_params;
-	MixerRegisterGroups *_mix_regs;
-	MixerVariables      *_mix_vars;
-};
+	int param_data_size = param_sizes.parameter_value_count * sizeof(mixer_register_val_u);
 
-//#define MIXER_REG_GROUP_NAMES {"CNTRLS_PRIMARY", "CONTROL1", "CONTROL2", "CONTROL3", "OUTPUTS", "PARAMETERS", "CONSTANTS", "STACK"}
+	_param_values = (mixer_register_val_u *)  malloc(param_data_size);
 
+	if (_param_values == nullptr) {
+		return -1;
+	}
 
-#endif  //_SYSTEMLIB_MIXER_DATAPARSER_H
+	memset(_param_values, 0, param_data_size);
+	_params = param_sizes;
+	return param_sizes.parameter_value_count;
+}

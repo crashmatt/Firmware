@@ -44,10 +44,12 @@
 
 /****************************************************************************/
 
-MixerDataParser::MixerDataParser(MixerGroup *mix_group, MixerParameters *mix_params, MixerRegisterGroups *mix_regs)
+MixerDataParser::MixerDataParser(MixerGroup *mix_group, MixerParameters *mix_params, MixerRegisterGroups *mix_regs,
+				 MixerVariables *mix_vars)
 	: _mix_group(mix_group)
 	, _mix_params(mix_params)
 	, _mix_regs(mix_regs)
+	, _mix_vars(mix_vars)
 {
 }
 
@@ -72,7 +74,28 @@ MixerDataParser::parse_buffer(uint8_t *buff, int bufflen)
 						break;
 					}
 
-				case MIXER_DATABLOCK_PARAMETER: {
+				case MIXER_DATABLOCK_PARAMETERS: {
+#if !defined(MIXER_REMOTE)
+						_mix_params->setParamsSize((mixer_parameters_s *) blk_hdr->data, true);
+#else
+						_mix_params->setParamsSize((mixer_parameters_s *) blk_hdr->data, false);
+#endif //MIXER_REMOTE
+						break;
+					}
+
+				case MIXER_DATABLOCK_PARAMETER_METADATA: {
+//                    mixer_parameter_metadata_s
+						break;
+					}
+
+				case MIXER_DATABLOCK_PARAM_VALUES: {
+						_mix_params->setValues((mixer_param_values_s *) blk_hdr->data);
+						break;
+					}
+
+				case MIXER_DATABLOCK_VARIABLE_COUNT: {
+						mixer_variables_s *vardata = (mixer_variables_s *) blk_hdr->data;
+						_mix_vars->setVariableCount(vardata->variable_count);
 						break;
 					}
 

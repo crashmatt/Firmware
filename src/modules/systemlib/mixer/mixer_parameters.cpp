@@ -48,6 +48,7 @@
 MixerParameters::MixerParameters()
 	: _params( {0, 0})
 , _param_values(nullptr)
+, _metadata(nullptr)
 {
 }
 
@@ -57,18 +58,23 @@ MixerParameters::~MixerParameters()
 	if (_param_values != nullptr) {
 		free(_param_values);
 	}
+
+	if (_metadata != nullptr) {
+		free(_metadata);
+	}
 }
 
 int
-MixerParameters::setParamsSize(mixer_parameters_s param_sizes)
+MixerParameters::setParamsSize(mixer_parameters_s *param_sizes, bool has_metadata)
 {
 	//Only allow setting of size once
 	if (_param_values != nullptr) {
 		return -1;
 	}
 
-	int param_data_size = param_sizes.parameter_value_count * sizeof(mixer_register_val_u);
+	_params = *param_sizes;
 
+	int param_data_size = _params.parameter_value_count * sizeof(mixer_register_val_u);
 	_param_values = (mixer_register_val_u *) malloc(param_data_size);
 
 	if (_param_values == nullptr) {
@@ -76,8 +82,19 @@ MixerParameters::setParamsSize(mixer_parameters_s param_sizes)
 	}
 
 	memset(_param_values, 0, param_data_size);
-	_params = param_sizes;
-	return param_sizes.parameter_value_count;
+
+	if (has_metadata) {
+		param_data_size = _params.parameter_count * sizeof(mixer_parameter_metadata_s);
+		_metadata = (mixer_parameter_metadata_s *) malloc(param_data_size);
+
+		if (_metadata == nullptr) {
+			return -1;
+		}
+
+		memset(_metadata, 0, param_data_size);
+	}
+
+	return 0;
 }
 
 int
@@ -89,4 +106,18 @@ MixerParameters::setValues(mixer_param_values_s *values)
 
 	memcpy(_param_values, values->values, values->value_count * sizeof(mixer_register_val_u));
 	return values->value_count;
+}
+
+int
+MixerParameters::setParamMetaData(mixer_parameter_metadata_s *metadata)
+{
+	if (_metadata == nullptr) {
+		return -1;
+	}
+
+	if (metadata->param_index < _params.parameter_count) {
+		_metadata[metadata->param_index] = *metadata;
+	}
+
+	return 0;
 }
