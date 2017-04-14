@@ -572,10 +572,10 @@ PWMSim::task_main()
 	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 
 
-//	int remaining = _mixers->from_buffer(mixbuff, mbindex);
-//	printf("Data remaining in buffer:%ubytes of buffer:%ubytes\n", remaining, mbindex);
-
 	free(mixbuff);
+
+	bool mix_valid = _mixers->check_mixers_valid();
+	printf("Mixers are %s\n", ((mix_valid) ? ("valid") : ("invalid")));
 
 	_groups_required = 0x01;
 

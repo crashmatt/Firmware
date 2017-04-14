@@ -152,6 +152,22 @@ MixerGroup::to_buffer(uint8_t *mixbuff, int bufflen)
 }
 
 
+bool
+MixerGroup::check_mixers_valid()
+{
+	Mixer *mix = _first;
+
+	while (mix != nullptr) {
+		if (mix->mixerValid(_reg_groups) == false) {
+			return false;
+		}
+
+		mix = mix->_next;
+	}
+
+	return true;
+}
+
 void
 MixerGroup::reset()
 {

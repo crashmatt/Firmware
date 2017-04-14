@@ -124,6 +124,13 @@ public:
 	virtual uint16_t    getBaseType()  {return MIXER_BASE_TYPE_NONE;}
 
 	/**
+	 * Check the mixer is using valid data in the registers
+	 *
+	 * @return          bool true if valid
+	 */
+	virtual bool        mixerValid(MixerRegisterGroups *reg_groups)  = 0;
+
+	/**
 	 * Get the mixer type from the mixer data
 	 *
 	 * @return			Mixer type
@@ -177,6 +184,7 @@ public:
 	~MixerOperator();
 
 	uint16_t getBaseType()  {return MIXER_BASE_TYPE_OPERATOR;}
+	bool mixerValid(MixerRegisterGroups *reg_groups);
 protected:
 private:
 };
@@ -193,6 +201,7 @@ public:
 	~MixerConstOperator();
 
 	uint16_t getBaseType()  {return MIXER_BASE_TYPE_CONST_OPERATOR;}
+	bool mixerValid(MixerRegisterGroups *reg_groups);
 protected:
 private:
 };
@@ -210,6 +219,7 @@ public:
 	~MixerFunction();
 
 	uint16_t getBaseType()  {return MIXER_BASE_TYPE_FUNCTION;}
+	bool mixerValid(MixerRegisterGroups *reg_groups);
 protected:
 private:
 };
@@ -229,6 +239,7 @@ public:
 	virtual ~MixerObject() {;}
 
 	uint16_t getBaseType()  {return MIXER_BASE_TYPE_OBJECT;}
+	virtual bool mixerValid(MixerRegisterGroups *reg_groups) {return false;}
 
 #if !defined(MIXER_REMOTE)
 	/**

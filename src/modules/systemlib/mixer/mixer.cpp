@@ -68,6 +68,26 @@ MixerOperator::~MixerOperator()
 	}
 }
 
+bool
+MixerOperator::mixerValid(MixerRegisterGroups *reg_groups)
+{
+	mixer_data_operator_s *oppdata = (mixer_data_operator_s *) _mixdata;
+
+	if (reg_groups->validRegister(&oppdata->ref_left) == false) {
+		return false;
+	}
+
+	if (reg_groups->validRegister(&oppdata->ref_right) == false) {
+		return false;
+	}
+
+	if (reg_groups->validRegister(&oppdata->ref_out) == false) {
+		return false;
+	}
+
+	return true;
+}
+
 
 /****************************************************************************/
 
@@ -83,6 +103,21 @@ MixerConstOperator::~MixerConstOperator()
 	}
 }
 
+bool
+MixerConstOperator::mixerValid(MixerRegisterGroups *reg_groups)
+{
+	mixer_data_const_operator_s *oppdata = (mixer_data_const_operator_s *) _mixdata;
+
+	if (reg_groups->validRegister(&oppdata->ref_in) == false) {
+		return false;
+	}
+
+	if (reg_groups->validRegister(&oppdata->ref_out) == false) {
+		return false;
+	}
+
+	return true;
+}
 
 
 /****************************************************************************/
@@ -97,6 +132,12 @@ MixerFunction::~MixerFunction()
 	if (_mixdata != nullptr) {
 		free((mixer_data_function_s *) _mixdata);
 	}
+}
+
+bool
+MixerFunction::mixerValid(MixerRegisterGroups *reg_groups)
+{
+	return false;
 }
 
 
