@@ -427,47 +427,58 @@ PWMSim::task_main()
 	MixerDataParser mixparser = MixerDataParser(_mixers, &mixparams, &_reg_groups, &mixvars);
 	mixer_datablock_header_s *hdr = (mixer_datablock_header_s *) mixbuff;
 
+
+	// Create and parse variables datablock
+	hdr = (mixer_datablock_header_s *) mixbuff;
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_VARIABLE_COUNT;
+	hdr->size = sizeof(mixer_variables_s);
+	mixer_variables_s *vars_size = (mixer_variables_s *) hdr->data;
+	vars_size->variable_count = 4;
+	printf("Parse variables datablock\n");
+	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
+
+	printf("Assign varraibles to register group\n");
+	_reg_groups.register_groups[MixerRegisterGroups::REGS_VARIABLES].setGroup(mixvars.count(),
+			mixvars.variables(), true);
+
+
 	// Create parameters datablock
-	printf("Create params datablock\n");
-	mixer_parameters_s *params_size = (mixer_parameters_s *) hdr->data;
+	hdr = (mixer_datablock_header_s *) mixbuff;
 	hdr->start = MIXER_DATABLOCK_START;
 	hdr->type = MIXER_DATABLOCK_PARAMETERS;
 	hdr->size = sizeof(mixer_parameters_s);
-
+	mixer_parameters_s *params_size = (mixer_parameters_s *) hdr->data;
 	params_size->parameter_count = 1;
 	params_size->parameter_value_count = 1;
-
 	printf("Parse params datablock\n");
 	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 
-
 	// Create parameter value datablock
-	printf("Create param values datablock\n");
+	hdr = (mixer_datablock_header_s *) mixbuff;
 	hdr->start = MIXER_DATABLOCK_START;
 	hdr->type = MIXER_DATABLOCK_PARAM_VALUES;
 	mixer_param_values_s *valdata = (mixer_param_values_s *) hdr->data;
 	mixer_register_val_u *regval;
-
 	valdata->value_index = 0;
 	valdata->value_count = 1;
+	//set header size to value count
 	hdr->size = sizeof(mixer_param_values_s) + (valdata->value_count * sizeof(mixer_register_val_u)); //One value only
-
 	regval = (mixer_register_val_u *) valdata->values;
 	regval->floatval = 0.66666;
-
 	printf("Parse param values datablock\n");
 	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
-
 	// Assign parameters to parameter register group
+
 	printf("Assign params to param register group\n");
 	_reg_groups.register_groups[MixerRegisterGroups::REGS_PARAMS].setGroup(mixparams.paramCount(),
 			mixparams.paramValues(), true);
 
 	//TEST SINGLE MIXER DATABLOCK
+	hdr = (mixer_datablock_header_s *) mixbuff;
 	hdr->start = MIXER_DATABLOCK_START;
 	hdr->type = MIXER_DATABLOCK_MIXER;
 	hdr->size = sizeof(mixer_data_operator_s);
-
 	mixer_data_operator_s *oppdata = (mixer_data_operator_s *) hdr->data;
 	oppdata->header.mixer_type = MIXER_TYPES_ADD;
 	oppdata->header.data_size = sizeof(mixer_data_operator_s);
@@ -477,14 +488,14 @@ PWMSim::task_main()
 	oppdata->ref_right.index = actuator_controls_s::INDEX_PITCH;
 	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata->ref_out.index = 0;
-
 	printf("Parse mixer values datablock\n");
 	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 
+
 	//TEST TWO MIXER DATABLOCKS IN ONE BUFFER LENGTH
 	int totalsize = 0;
-
 	hdr = (mixer_datablock_header_s *) mixbuff;
+	// Copy Control to output
 	hdr->start = MIXER_DATABLOCK_START;
 	hdr->type = MIXER_DATABLOCK_MIXER;
 	hdr->size = sizeof(mixer_data_operator_s);
@@ -497,11 +508,10 @@ PWMSim::task_main()
 	oppdata->ref_right.index = actuator_controls_s::INDEX_PITCH;
 	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata->ref_out.index = 1;
-
-	totalsize = sizeof(mixer_datablock_header_s) + hdr->size;
-
 	// move header to next buffer location
+	totalsize = sizeof(mixer_datablock_header_s) + hdr->size;
 	hdr = (mixer_datablock_header_s *)(mixbuff + totalsize);
+	// Add control inputs to output
 	hdr->start = MIXER_DATABLOCK_START;
 	hdr->type = MIXER_DATABLOCK_MIXER;
 	hdr->size = sizeof(mixer_data_operator_s);
@@ -514,10 +524,11 @@ PWMSim::task_main()
 	oppdata->ref_right.index = actuator_controls_s::INDEX_YAW;
 	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata->ref_out.index = 2;
-
+	// parse result
 	totalsize += (sizeof(mixer_datablock_header_s) + hdr->size);
 	printf("Parse double mixer datablocks\n");
 	mixparser.parse_buffer(mixbuff, totalsize);
+
 
 	//TEST MULTIPLE MIXERS IN ONE MIXER DATABLOCK
 	hdr = (mixer_datablock_header_s *) mixbuff;
@@ -525,7 +536,7 @@ PWMSim::task_main()
 	hdr->type = MIXER_DATABLOCK_MIXER;
 	hdr->size = sizeof(mixer_data_operator_s);
 	totalsize = hdr->size;
-
+	//Multiply control with parameter to output
 	oppdata = (mixer_data_operator_s *) hdr->data;
 	oppdata->header.mixer_type = MIXER_TYPES_MULTIPLY;
 	oppdata->header.data_size = sizeof(mixer_data_operator_s);
@@ -535,7 +546,7 @@ PWMSim::task_main()
 	oppdata->ref_right.index = 0;
 	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata->ref_out.index = 3;
-
+	//Copy control into varaibles
 	oppdata = (mixer_data_operator_s *)(hdr->data + hdr->size);
 	hdr->size += sizeof(mixer_data_operator_s);
 	oppdata->header.mixer_type = MIXER_TYPES_COPY;
@@ -544,18 +555,18 @@ PWMSim::task_main()
 	oppdata->ref_left.index = 0x00;
 	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
 	oppdata->ref_right.index = actuator_controls_s::INDEX_THROTTLE;
-	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppdata->ref_out.index = 4;
-
+	oppdata->ref_out.group = MixerRegisterGroups::REGS_VARIABLES;
+	oppdata->ref_out.index = 0;
+	//Addconstant to variable
 	mixer_data_const_operator_s *oppcdata = (mixer_data_const_operator_s *)(hdr->data + hdr->size);
 	hdr->size += sizeof(mixer_data_const_operator_s);
 	oppcdata->header.mixer_type = MIXER_TYPES_ADD_CONST;
 	oppcdata->header.data_size = sizeof(mixer_data_const_operator_s);
 	oppcdata->constval.floatval = 0.5;
-	oppcdata->ref_in.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppcdata->ref_in.index = actuator_controls_s::INDEX_YAW;
+	oppcdata->ref_in.group = MixerRegisterGroups::REGS_VARIABLES;
+	oppcdata->ref_in.index = 0;
 	oppcdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppcdata->ref_out.index = 5;
+	oppcdata->ref_out.index = 4;
 
 	printf("Parse multi mixers in single datablock with datasize:%u\n", hdr->size);
 	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
