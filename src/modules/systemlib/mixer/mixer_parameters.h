@@ -53,7 +53,7 @@ public:
 	MixerParameters();
 	~MixerParameters();
 
-	int setParamsSize(mixer_parameters_s *param_sizes, bool has_metadata);
+	int setParamsSize(mixer_parameters_s *param_sizes);
 	int setValues(mixer_param_values_s *values);
 	int setParamMetaData(mixer_parameter_metadata_s *metadata);
 	uint16_t valueCount() {return _params.parameter_value_count;}

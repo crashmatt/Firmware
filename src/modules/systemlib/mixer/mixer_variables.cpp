@@ -32,10 +32,10 @@
  ****************************************************************************/
 
 /**
- * @file mixer_parameters.cpp
+ * @file mixer_variables.cpp
  *
- * Object owning all global mixer parameters.
- * Initialized from mixer parameters data structure.
+ * Object owning all global mixer variables.
+ * Initialized from mixer variables data structure.
  */
 
 #include <stdlib.h>

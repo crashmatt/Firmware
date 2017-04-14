@@ -41,7 +41,10 @@
 
 #include "mixer_data_parser.h"
 #include "mixers.h"
-#include <stdio.h>
+//#include <stdio.h>
+
+#define debug(fmt, args...)	do { } while(0)
+//#define debug(fmt, args...)	do { printf("[mixer] " fmt "\n", ##args); } while(0)
 
 /****************************************************************************/
 
@@ -62,48 +65,43 @@ MixerDataParser::parse_buffer(uint8_t *buff, int bufflen)
 	mixer_datablock_header_s *blk_hdr;
 	int remaining = bufflen;
 
-	printf("parse buffer with size %u\n", bufflen);
+	debug("parse buffer with size %u\n", bufflen);
 
 	while (pos < end) {
 		blk_hdr = (mixer_datablock_header_s *) pos;
-		printf("parse buffer position %u\n", (pos - buff));
+		debug("parse buffer position %u\n", (pos - buff));
 
 		if (blk_hdr->start == MIXER_DATABLOCK_START) {
 			remaining = bufflen - (blk_hdr->data - buff);
-			printf("Found datablock start\n");
+			debug("Found datablock start\n");
 
 			if (remaining >= blk_hdr->size) {
 				switch (blk_hdr->type) {
 				case MIXER_DATABLOCK_MIXER: {
-						int mix_parse_remaining = _mix_group->from_buffer((uint8_t *) &blk_hdr->data, blk_hdr->size);
-						printf("Parsed mixer datablock with remaining:%u\n", mix_parse_remaining);
+						_mix_group->from_buffer((uint8_t *) &blk_hdr->data, blk_hdr->size);
 						break;
 					}
 
 				case MIXER_DATABLOCK_PARAMETERS: {
-						printf("Parsing parameters datablock\n");
-#if !defined(MIXER_REMOTE)
-						_mix_params->setParamsSize((mixer_parameters_s *) blk_hdr->data, true);
-#else
-						_mix_params->setParamsSize((mixer_parameters_s *) blk_hdr->data, false);
-#endif //MIXER_REMOTE
+						debug("Parsing parameters datablock\n");
+						_mix_params->setParamsSize((mixer_parameters_s *) blk_hdr->data);
 						break;
 					}
 
 				case MIXER_DATABLOCK_PARAMETER_METADATA: {
-						printf("Parsing parameter metadata datablock\n");
+						debug("Parsing parameter metadata datablock\n");
 						_mix_params->setParamMetaData((mixer_parameter_metadata_s *) blk_hdr->data);
 						break;
 					}
 
 				case MIXER_DATABLOCK_PARAM_VALUES: {
-						printf("Parsing parameter values datablock\n");
+						debug("Parsing parameter values datablock\n");
 						_mix_params->setValues((mixer_param_values_s *) blk_hdr->data);
 						break;
 					}
 
 				case MIXER_DATABLOCK_VARIABLE_COUNT: {
-						printf("Parsing variable count datablock\n");
+						debug("Parsing variable count datablock\n");
 						mixer_variables_s *vardata = (mixer_variables_s *) blk_hdr->data;
 						_mix_vars->setVariableCount(vardata->variable_count);
 						break;

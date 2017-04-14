@@ -41,7 +41,7 @@
 
 #include <sys/types.h>
 #include <stdint.h>
-#include <stdio.h>
+//#include <stdio.h>
 #include <math.h>
 
 
@@ -65,7 +65,6 @@ MixerAdd::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
 	float *right = reg_groups->getFloatValue(mixdata->ref_right);
 
 	*dest = *left + *right;
-//    printf("dest=%f left=%f right=%f\n", (double) *dest, (double) *left, (double) *right);
 	return 0;
 }
 
@@ -85,7 +84,6 @@ MixerAddConst::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
 	float *value = reg_groups->getFloatValue(mixdata->ref_in);
 
 	*dest = *value + mixdata->constval.floatval;
-//    printf("dest=%f value=%f constval=%f\n", (double) *dest, (double) *value, mixdata->constval.floatval);
 	return 0;
 }
 

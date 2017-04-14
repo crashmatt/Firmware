@@ -65,7 +65,7 @@ MixerParameters::~MixerParameters()
 }
 
 int
-MixerParameters::setParamsSize(mixer_parameters_s *param_sizes, bool has_metadata)
+MixerParameters::setParamsSize(mixer_parameters_s *param_sizes)
 {
 	//Only allow setting of size once
 	if (_param_values != nullptr) {
@@ -74,6 +74,7 @@ MixerParameters::setParamsSize(mixer_parameters_s *param_sizes, bool has_metadat
 
 	_params = *param_sizes;
 
+	// Create parameter values in heap
 	int param_data_size = _params.parameter_value_count * sizeof(mixer_register_val_u);
 	_param_values = (mixer_register_val_u *) malloc(param_data_size);
 
@@ -83,16 +84,17 @@ MixerParameters::setParamsSize(mixer_parameters_s *param_sizes, bool has_metadat
 
 	memset(_param_values, 0, param_data_size);
 
-	if (has_metadata) {
-		param_data_size = _params.parameter_count * sizeof(mixer_parameter_metadata_s);
-		_metadata = (mixer_parameter_metadata_s *) malloc(param_data_size);
+	// If not a remote mxer then add a container for parameter metadata
+#if !defined(MIXER_REMOTE)
+	param_data_size = _params.parameter_count * sizeof(mixer_parameter_metadata_s);
+	_metadata = (mixer_parameter_metadata_s *) malloc(param_data_size);
 
-		if (_metadata == nullptr) {
-			return -1;
-		}
-
-		memset(_metadata, 0, param_data_size);
+	if (_metadata == nullptr) {
+		return -1;
 	}
+
+	memset(_metadata, 0, param_data_size);
+#endif //MIXER_REMOTE
 
 	return 0;
 }
@@ -111,6 +113,8 @@ MixerParameters::setValues(mixer_param_values_s *values)
 int
 MixerParameters::setParamMetaData(mixer_parameter_metadata_s *metadata)
 {
+#if !defined(MIXER_REMOTE)
+
 	if (_metadata == nullptr) {
 		return -1;
 	}
@@ -119,5 +123,6 @@ MixerParameters::setParamMetaData(mixer_parameter_metadata_s *metadata)
 		_metadata[metadata->param_index] = *metadata;
 	}
 
+#endif  //MIXER_REMOTE
 	return 0;
 }
