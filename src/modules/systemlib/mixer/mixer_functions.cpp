@@ -32,12 +32,12 @@
  ****************************************************************************/
 
 /**
- * @file mixer_operators.cpp
+ * @file mixer_functions.cpp
  *
  * Generic mixer library.
  */
 
-#include "mixer_operators.h"
+#include "mixer_functions.h"
 
 #include <sys/types.h>
 #include <stdint.h>
@@ -51,78 +51,86 @@
 
 /****************************************************************************/
 
-MixerAdd::MixerAdd(mixer_data_operator_s *mixdata)
-	: MixerOperator(mixdata)
+MixerMultipoint::MixerMultipoint(mixer_data_multipoint_s *mixdata)
+	: Mixer((mixer_base_header_s *) mixdata)
 {
 }
 
 uint16_t
-MixerAdd::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
+MixerMultipoint::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
 {
-	mixer_data_operator_s *mixdata = (mixer_data_operator_s *) _mixdata;
-	float *dest = reg_groups->getFloatValue(mixdata->ref_out);
-	float *left = reg_groups->getFloatValue(mixdata->ref_left);
-	float *right = reg_groups->getFloatValue(mixdata->ref_right);
+	mixer_data_multipoint_s *multdata = (mixer_data_multipoint_s *) _mixdata;
 
-	*dest = *left + *right;
+	float input = *reg_groups->getFloatValue(multdata->ref_in);
+
+	float *invals = reg_groups->getFloatValue(multdata->in_vals);
+	float *outvals = reg_groups->getFloatValue(multdata->out_vals);
+
+	float *output = reg_groups->getFloatValue(multdata->ref_out);
+
+	if (input <= invals[0]) {
+		*output = outvals[0];
+	}
+
+	for (int i = 0; i < (multdata->count - 1); i++) {
+		if ((input >= invals[i]) && (input <= invals[i + 1])) {
+			float inrange = invals[i + 1] - invals[i];
+
+			// Prevent divide by zero or reversed input values
+			if (inrange <= 0) {
+				*output = outvals[i];
+				return 0;
+			}
+
+			float outrange = outvals[i + 1] - outvals[i];
+			*output = ((input - invals[i]) * outrange / inrange) + outvals[i];
+			return 0;
+		}
+	}
+
+	*output = outvals[multdata->count - 1];
 	return 0;
 }
 
-
-/****************************************************************************/
-
-MixerAddConst::MixerAddConst(mixer_data_const_operator_s *mixdata)
-	: MixerConstOperator(mixdata)
+bool
+MixerMultipoint::mixerValid(MixerRegisterGroups *reg_groups)
 {
-}
+	if (_mixdata == false) {
+		return false;
+	}
 
-uint16_t
-MixerAddConst::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
-{
-	mixer_data_const_operator_s *mixdata = (mixer_data_const_operator_s *) _mixdata;
-	float *dest = reg_groups->getFloatValue(mixdata->ref_out);
-	float *value = reg_groups->getFloatValue(mixdata->ref_in);
+	mixer_data_multipoint_s *multdata = (mixer_data_multipoint_s *) _mixdata;
 
-	*dest = *value + mixdata->constval.floatval;
-	return 0;
-}
+	//Check input and output references
+	if (!reg_groups->validRegister(&multdata->ref_in, true)) {
+		return false;
+	}
 
+	if (!reg_groups->validRegister(&multdata->ref_out, true)) {
+		return false;
+	}
 
-/****************************************************************************/
+	//Check start and end of input registers. Pressume inbetween is ok.
+	if (!reg_groups->validRegister(&multdata->in_vals, true)) {
+		return false;
+	}
 
-MixerCopy::MixerCopy(mixer_data_operator_s *mixdata)
-	: MixerOperator(mixdata)
-{
-}
+	if (!reg_groups->validRegister(&multdata->out_vals, true)) {
+		return false;
+	}
 
-uint16_t
-MixerCopy::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
-{
-	mixer_data_operator_s *mixdata = (mixer_data_operator_s *) _mixdata;
-	float *dest = reg_groups->getFloatValue(mixdata->ref_out);
-	float *right = reg_groups->getFloatValue(mixdata->ref_right);
+	mixer_register_ref_s ipref = multdata->in_vals;
+	mixer_register_ref_s opref = multdata->out_vals;
+	ipref.index += multdata->count;
+	opref.index += multdata->count;
 
-	*dest = *right;
-	return 0;
-	return 0;
-}
+	if (!reg_groups->validRegister(&ipref, true)) {
+		return false;
+	}
 
+	if (!reg_groups->validRegister(&opref, true)) {
+		return false;
+	}
 
-/****************************************************************************/
-
-MixerMultiply::MixerMultiply(mixer_data_operator_s *mixdata)
-	: MixerOperator(mixdata)
-{
-}
-
-uint16_t
-MixerMultiply::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
-{
-	mixer_data_operator_s *mixdata = (mixer_data_operator_s *) _mixdata;
-	float *dest = reg_groups->getFloatValue(mixdata->ref_out);
-	float *left = reg_groups->getFloatValue(mixdata->ref_left);
-	float *right = reg_groups->getFloatValue(mixdata->ref_right);
-
-	*dest = *left * *right;
-	return 0;
+	return true;
 }

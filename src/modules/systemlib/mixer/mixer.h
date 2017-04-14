@@ -207,22 +207,22 @@ private:
 };
 
 
-/****************************************************************************/
+///****************************************************************************/
 
-/**
- * Abstract class defining the basic mixer oeprations
- */
-class __EXPORT MixerFunction : public Mixer
-{
-public:
-	MixerFunction(mixer_data_function_s *mixdata);
-	~MixerFunction();
+///**
+// * Abstract class defining the basic mixer oeprations
+// */
+//class __EXPORT MixerFunction : public Mixer
+//{
+//public:
+//	MixerFunction(mixer_data_function_s *mixdata);
+//	~MixerFunction();
 
-	uint16_t getBaseType()  {return MIXER_BASE_TYPE_FUNCTION;}
-	bool mixerValid(MixerRegisterGroups *reg_groups);
-protected:
-private:
-};
+//	uint16_t getBaseType()  {return MIXER_BASE_TYPE_FUNCTION;}
+//    virtual bool mixerValid(MixerRegisterGroups *reg_groups) {return false;}
+//protected:
+//private:
+//};
 
 
 

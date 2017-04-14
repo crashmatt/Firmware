@@ -48,6 +48,7 @@ px4_add_module(
                 mixer.cpp
                 mixer_group.cpp
                 mixer_operators.cpp
+                mixer_functions.cpp
                 mixer_factory.cpp
                 mixer_parameters.cpp
                 mixer_data_parser.cpp

@@ -120,25 +120,25 @@ MixerConstOperator::mixerValid(MixerRegisterGroups *reg_groups)
 }
 
 
-/****************************************************************************/
+///****************************************************************************/
 
-MixerFunction::MixerFunction(mixer_data_function_s *mixdata)
-	: Mixer((mixer_base_header_s *) mixdata)
-{
-}
+//MixerFunction::MixerFunction(mixer_data_function_s *mixdata)
+//	: Mixer((mixer_base_header_s *) mixdata)
+//{
+//}
 
-MixerFunction::~MixerFunction()
-{
-	if (_mixdata != nullptr) {
-		free((mixer_data_function_s *) _mixdata);
-	}
-}
+//MixerFunction::~MixerFunction()
+//{
+//	if (_mixdata != nullptr) {
+//		free((mixer_data_function_s *) _mixdata);
+//	}
+//}
 
-bool
-MixerFunction::mixerValid(MixerRegisterGroups *reg_groups)
-{
-	return false;
-}
+//bool
+//MixerFunction::mixerValid(MixerRegisterGroups *reg_groups)
+//{
+//	return false;
+//}
 
 
 /****************************************************************************/

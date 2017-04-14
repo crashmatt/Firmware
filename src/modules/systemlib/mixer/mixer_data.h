@@ -99,29 +99,40 @@ __attribute__((packed))
 	mixer_register_ref_s    ref_out;
 } mixer_data_const_operator_s;
 
-typedef struct
-__attribute__((packed))
-{
-	uint8_t     input_count;
-	uint8_t     output_count;
-	uint8_t     input_offset;    //Offset of input registers in data
-	uint8_t     output_offset;   //Offset of output registers in data
-} mixer_data_io_s;
+//typedef struct
+//__attribute__((packed))
+//{
+//	uint8_t     input_count;
+//	uint8_t     output_count;
+//	uint8_t     input_offset;    //Offset of input registers in data
+//	uint8_t     output_offset;   //Offset of output registers in data
+//} mixer_data_io_s;
+
+
+//typedef struct
+//__attribute__((packed))
+//{
+//    mixer_base_header_s     header;
+//    mixer_data_io_s         io;
+//} mixer_data_function_s;
 
 
 typedef struct
 __attribute__((packed))
 {
 	mixer_base_header_s     header;
-	mixer_data_io_s         io;
-} mixer_data_function_s;
+	uint32_t                count;
+	mixer_register_ref_s    ref_in;
+	mixer_register_ref_s    in_vals;
+	mixer_register_ref_s    out_vals;
+	mixer_register_ref_s    ref_out;
+} mixer_data_multipoint_s;
 
 
 typedef struct
 __attribute__((packed))
 {
 	uint16_t    data_size;
-	uint16_t    data_offset;
 	uint8_t     data[0];
 } mixer_data_s;
 
@@ -130,7 +141,6 @@ typedef struct
 __attribute__((packed))
 {
 	mixer_base_header_s     base;
-	mixer_data_io_s         io;
 	mixer_data_s            data;
 } mixer_data_object_s;
 
