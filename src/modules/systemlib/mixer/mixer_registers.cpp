@@ -62,6 +62,25 @@ MixerRegisterGroup::setGroup(unsigned group_size, mixer_register_val_u *group_da
 }
 
 
+bool
+MixerRegisterGroup::validRegister(uint16_t reg_index, bool read_only)
+{
+	if (_group_data == nullptr) {
+		return false;
+	}
+
+	if (reg_index >= _group_size) {
+		return false;
+	}
+
+	if (!read_only && _read_only) {
+		return false;
+	}
+
+	return true;
+}
+
+
 /****************************************************************************/
 
 MixerRegisterGroups::MixerRegisterGroups()
@@ -69,17 +88,13 @@ MixerRegisterGroups::MixerRegisterGroups()
 {
 }
 
-bool MixerRegisterGroups::validRegister(mixer_register_ref_s *regref)
+bool MixerRegisterGroups::validRegister(mixer_register_ref_s *regref, bool read_only)
 {
 	if (regref->group >= MIXER_REGISTER_GROUPS_MAX) {
 		return false;
 	}
 
-	if (regref->index >= register_groups[regref->group].groupSize()) {
-		return false;
-	}
-
-	return true;
+	return register_groups[regref->group].validRegister(regref->index, read_only);
 }
 
 const char *MixerRegisterGroups::getGroupName(int index)
@@ -90,10 +105,3 @@ const char *MixerRegisterGroups::getGroupName(int index)
 
 	return register_group_names_table[index];
 }
-
-//#if defined(MIXER_TUNING)
-//#if !defined(MIXER_REMOTE)
-//#endif //MIXER_REMOTE
-
-
-//#endif //defined(MIXER_TUNING)

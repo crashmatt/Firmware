@@ -296,9 +296,9 @@ public:
 	/**
 	 * Check that the mixers are using valid data from the registers
 	 *
-	 * @return		true if mixers ok.
+	* @return		0 if ok.  Index of mixer tht failed if not ok.
 	 */
-	bool check_mixers_valid();
+	int check_mixers_valid();
 
 	/**
 	 * Perform mixer for the group mixer collection

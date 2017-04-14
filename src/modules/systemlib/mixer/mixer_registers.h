@@ -61,6 +61,8 @@ public:
 
 	mixer_register_val_u   *groupData() {return _group_data;}
 
+	bool validRegister(uint16_t reg_index, bool read_only = true);
+
 	bool                group_required;
 
 protected:
@@ -95,7 +97,7 @@ public:
 
 	float *getFloatValue(mixer_register_ref_s regref) {return &(register_groups[regref.group].groupData()[regref.index].floatval);}
 
-	bool validRegister(mixer_register_ref_s *regref);
+	bool validRegister(mixer_register_ref_s *regref, bool read_only = false);
 
 
 	MixerRegisterGroup  register_groups[MIXER_REGISTER_GROUPS_MAX];
@@ -107,8 +109,6 @@ public:
 
 protected:
 };
-
-
 
 
 #endif

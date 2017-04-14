@@ -42,7 +42,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
+//#include <string.h>
 
 #define debug(fmt, args...)	do { } while(0)
 //#define debug(fmt, args...)	do { printf("[mixer] " fmt "\n", ##args); } while(0)
@@ -73,15 +73,15 @@ MixerOperator::mixerValid(MixerRegisterGroups *reg_groups)
 {
 	mixer_data_operator_s *oppdata = (mixer_data_operator_s *) _mixdata;
 
-	if (reg_groups->validRegister(&oppdata->ref_left) == false) {
+	if (reg_groups->validRegister(&oppdata->ref_left, true) == false) {
 		return false;
 	}
 
-	if (reg_groups->validRegister(&oppdata->ref_right) == false) {
+	if (reg_groups->validRegister(&oppdata->ref_right, true) == false) {
 		return false;
 	}
 
-	if (reg_groups->validRegister(&oppdata->ref_out) == false) {
+	if (reg_groups->validRegister(&oppdata->ref_out, false) == false) {
 		return false;
 	}
 
@@ -108,11 +108,11 @@ MixerConstOperator::mixerValid(MixerRegisterGroups *reg_groups)
 {
 	mixer_data_const_operator_s *oppdata = (mixer_data_const_operator_s *) _mixdata;
 
-	if (reg_groups->validRegister(&oppdata->ref_in) == false) {
+	if (reg_groups->validRegister(&oppdata->ref_in, true) == false) {
 		return false;
 	}
 
-	if (reg_groups->validRegister(&oppdata->ref_out) == false) {
+	if (reg_groups->validRegister(&oppdata->ref_out, false) == false) {
 		return false;
 	}
 

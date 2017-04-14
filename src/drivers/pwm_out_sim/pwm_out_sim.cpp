@@ -406,7 +406,7 @@ PWMSim::task_main()
 			(mixer_register_val_u *) _controls[3].control, true);
 
 	_reg_groups.register_groups[MixerRegisterGroups::REGS_OUTPUTS].setGroup(actuator_outputs_s::NUM_ACTUATOR_OUTPUTS,
-			(mixer_register_val_u *) outputs.output, true);
+			(mixer_register_val_u *) outputs.output, false);
 
 	if (_mixers == nullptr) {
 		_mixers = new MixerGroup(&_reg_groups);
@@ -440,7 +440,7 @@ PWMSim::task_main()
 
 	printf("Assign varraibles to register group\n");
 	_reg_groups.register_groups[MixerRegisterGroups::REGS_VARIABLES].setGroup(mixvars.count(),
-			mixvars.variables(), true);
+			mixvars.variables(), false);
 
 
 	// Create parameters datablock
@@ -568,14 +568,33 @@ PWMSim::task_main()
 	oppcdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppcdata->ref_out.index = 4;
 
+//    //This mixer should fails since it is writing to a read only control
+//    oppdata = (mixer_data_operator_s *)(hdr->data + hdr->size);
+//    hdr->size += sizeof(mixer_data_operator_s);
+//    oppdata->header.mixer_type = MIXER_TYPES_COPY;
+//    oppdata->header.data_size = sizeof(mixer_data_operator_s);
+//    oppdata->ref_left.group = 0x00;
+//    oppdata->ref_left.index = 0x00;
+//    oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+//    oppdata->ref_right.index = actuator_controls_s::INDEX_THROTTLE;
+//    oppdata->ref_out.group = MixerRegisterGroups::REGS_CONTROL_0;
+//    oppdata->ref_out.index = 0;
+
 	printf("Parse multi mixers in single datablock with datasize:%u\n", hdr->size);
 	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 
 
 	free(mixbuff);
 
-	bool mix_valid = _mixers->check_mixers_valid();
-	printf("Mixers are %s\n", ((mix_valid) ? ("valid") : ("invalid")));
+	int errindex =  _mixers->check_mixers_valid();
+
+	if (errindex == -1) {
+		printf("Mixers are ok\n");
+
+	} else {
+		printf("Mixers %u is not ok\n", errindex);
+
+	}
 
 	_groups_required = 0x01;
 

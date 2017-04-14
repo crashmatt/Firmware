@@ -41,15 +41,7 @@
 
 #include <sys/types.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <errno.h>
-#include <stdio.h>
-#include <math.h>
-#include <unistd.h>
 
 #include "mixer.h"
 #include "mixer_factory.h"
@@ -152,20 +144,22 @@ MixerGroup::to_buffer(uint8_t *mixbuff, int bufflen)
 }
 
 
-bool
+int
 MixerGroup::check_mixers_valid()
 {
 	Mixer *mix = _first;
+	int index = 0;
 
 	while (mix != nullptr) {
 		if (mix->mixerValid(_reg_groups) == false) {
-			return false;
+			return index;
 		}
 
 		mix = mix->_next;
+		index++;
 	}
 
-	return true;
+	return -1;
 }
 
 void
