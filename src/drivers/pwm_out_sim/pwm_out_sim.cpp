@@ -474,6 +474,18 @@ PWMSim::task_main()
 	_reg_groups.register_groups[MixerRegisterGroups::REGS_PARAMS].setGroup(mixparams.paramCount(),
 			mixparams.paramValues(), true);
 
+	// Create parameter metadata datablock
+	hdr = (mixer_datablock_header_s *) mixbuff;
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_PARAMETER_METADATA;
+	hdr->size = sizeof(mixer_parameter_metadata_s);
+	mixer_parameter_metadata_s *metadata = (mixer_parameter_metadata_s *) hdr->data;
+	metadata->param_index = 0;
+	metadata->array_size = 1;
+	strncpy(metadata->name, "PARAM_1", 16);
+	printf("Parse parameter metadata datablock\n");
+	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
+
 	//TEST SINGLE MIXER DATABLOCK
 	hdr = (mixer_datablock_header_s *) mixbuff;
 	hdr->start = MIXER_DATABLOCK_START;

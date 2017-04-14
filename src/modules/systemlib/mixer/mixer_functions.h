@@ -55,6 +55,7 @@ public:
 
 	uint16_t		mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type = MIXER_REGISTER_TYPE_NONE);
 	bool            mixerValid(MixerRegisterGroups *reg_groups);
+	uint16_t        getDataSize() {return sizeof(mixer_data_multipoint_s);}
 protected:
 private:
 };

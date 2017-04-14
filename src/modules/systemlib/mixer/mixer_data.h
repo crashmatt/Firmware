@@ -120,6 +120,14 @@ __attribute__((packed))
 typedef struct
 __attribute__((packed))
 {
+	uint32_t    data_size;
+	uint8_t     data[0];
+} mixer_data_s;
+
+
+typedef struct
+__attribute__((packed))
+{
 	mixer_base_header_s     header;
 	uint32_t                count;
 	mixer_register_ref_s    ref_in;
@@ -127,14 +135,6 @@ __attribute__((packed))
 	mixer_register_ref_s    out_vals;
 	mixer_register_ref_s    ref_out;
 } mixer_data_multipoint_s;
-
-
-typedef struct
-__attribute__((packed))
-{
-	uint16_t    data_size;
-	uint8_t     data[0];
-} mixer_data_s;
 
 
 typedef struct

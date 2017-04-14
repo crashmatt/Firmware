@@ -142,7 +142,7 @@ public:
 	 *
 	 * @return			Mixer data size
 	 */
-	uint16_t getDataSize() {if (_mixdata != nullptr) return _mixdata->data_size; else return 0;}
+	virtual uint16_t getDataSize() {if (_mixdata != nullptr) return _mixdata->data_size; else return 0;}
 
 	/**
 	 * Get the mixer data
@@ -207,10 +207,10 @@ private:
 };
 
 
-///****************************************************************************/
+/////****************************************************************************/
 
 ///**
-// * Abstract class defining the basic mixer oeprations
+// * Abstract class defining the basic mixers for functions
 // */
 //class __EXPORT MixerFunction : public Mixer
 //{
@@ -219,7 +219,6 @@ private:
 //	~MixerFunction();
 
 //	uint16_t getBaseType()  {return MIXER_BASE_TYPE_FUNCTION;}
-//    virtual bool mixerValid(MixerRegisterGroups *reg_groups) {return false;}
 //protected:
 //private:
 //};
