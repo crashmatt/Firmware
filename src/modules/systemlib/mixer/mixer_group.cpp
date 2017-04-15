@@ -150,6 +150,10 @@ MixerGroup::check_mixers_valid()
 	Mixer *mix = _first;
 	int index = 0;
 
+	if (_reg_groups == nullptr) {
+		return 0;
+	}
+
 	while (mix != nullptr) {
 		if (mix->mixerValid(_reg_groups) == false) {
 			return index;
@@ -184,6 +188,10 @@ uint16_t
 MixerGroup::mix_group()
 {
 	Mixer	*mixer = _first;
+
+	if (_reg_groups == nullptr) {
+		return 0;
+	}
 
 	while (mixer != nullptr) {
 		mixer->mix(_reg_groups);

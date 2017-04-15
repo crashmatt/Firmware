@@ -287,7 +287,7 @@ public:
 class __EXPORT MixerGroup
 {
 public:
-	MixerGroup(MixerRegisterGroups *reg_groups);
+	MixerGroup(MixerRegisterGroups *reg_groups = nullptr);
 	~MixerGroup();
 
 	uint16_t get_saturation_status(void);
@@ -323,6 +323,14 @@ public:
 	 * @return          Zero on successful load, nonzero otherwise.
 	 */
 	int append_mixer(Mixer *mixer);
+
+
+	/**
+	 * Set the reference to mixer regsiter object used by the mixer
+	 *
+	 * @param reg_groups     reference to MixerRegisterGroups object
+	 */
+	void setRegGroups(MixerRegisterGroups *reg_groups) {_reg_groups = reg_groups;}
 
 
 	/**

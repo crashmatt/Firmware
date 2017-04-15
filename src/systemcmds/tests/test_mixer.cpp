@@ -53,7 +53,8 @@
 #include <math.h>
 
 #include <systemlib/err.h>
-#include <systemlib/mixer/mixer.h>
+#include <systemlib/mixer/mixers.h>
+#include <systemlib/mixer/mixer_data_parser.h>
 #include <systemlib/pwm_limit/pwm_limit.h>
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_pwm_output.h>
@@ -61,6 +62,7 @@
 #include <px4iofirmware/protocol.h>
 
 #include <uORB/topics/actuator_controls.h>
+#include <uORB/topics/actuator_outputs.h>
 
 #include "tests_main.h"
 
@@ -109,16 +111,17 @@ public:
 	MixerTest();
 
 private:
-	bool mixerTest();
-	bool loadIOPass();
-	bool loadVTOL1Test();
-	bool loadVTOL2Test();
-	bool loadQuadTest();
-	bool loadComplexTest();
-	bool loadAllTest();
-	bool load_mixer(const char *filename, unsigned expected_count, bool verbose = false);
-	bool load_mixer(const char *filename, const char *buf, unsigned loaded, unsigned expected_count,
-			const unsigned chunk_size, bool verbose);
+	bool mixerParserTest();
+//	bool mixerTest();
+//	bool loadIOPass();
+//	bool loadVTOL1Test();
+//	bool loadVTOL2Test();
+//	bool loadQuadTest();
+//	bool loadComplexTest();
+//	bool loadAllTest();
+//	bool load_mixer(const char *filename, unsigned expected_count, bool verbose = false);
+//	bool load_mixer(const char *filename, const char *buf, unsigned loaded, unsigned expected_count,
+//			const unsigned chunk_size, bool verbose);
 
 	MixerGroup mixer_group;
 };
@@ -130,7 +133,8 @@ MixerTest::MixerTest() : UnitTest(),
 
 bool MixerTest::run_tests()
 {
-//	ut_run_test(loadIOPass);
+
+	ut_run_test(mixerParserTest);
 //	ut_run_test(loadQuadTest);
 //	ut_run_test(loadVTOL1Test);
 //	ut_run_test(loadVTOL2Test);
@@ -138,110 +142,364 @@ bool MixerTest::run_tests()
 //	ut_run_test(loadAllTest);
 //	ut_run_test(mixerTest);
 
-//	return (_tests_failed == 0);
-	return false;
+	return (_tests_failed == 0);
 }
 
 ut_declare_test_c(test_mixer, MixerTest)
 
-bool MixerTest::loadIOPass()
+//bool MixerTest::loadIOPass()
+//{
+//	return load_mixer(MIXER_PATH(IO_pass.mix), 8);
+//}
+
+//bool MixerTest::loadQuadTest()
+//{
+//	return load_mixer(MIXER_PATH(quad_test.mix), 5);
+//}
+
+//bool MixerTest::loadVTOL1Test()
+//{
+//	return load_mixer(MIXER_PATH(vtol1_test.mix), 4);
+//}
+
+//bool MixerTest::loadVTOL2Test()
+//{
+//	return load_mixer(MIXER_PATH(vtol2_test.mix), 6);
+//}
+
+//bool MixerTest::loadComplexTest()
+//{
+//	return load_mixer(MIXER_PATH(complex_test.mix), 8);
+//}
+
+
+
+bool MixerTest::mixerParserTest()
 {
-	return load_mixer(MIXER_PATH(IO_pass.mix), 8);
-}
+	actuator_controls_s _controls[actuator_controls_s::NUM_ACTUATOR_CONTROL_GROUPS];
+	actuator_outputs_s outputs = {};
+	size_t num_outputs = 8;
 
-bool MixerTest::loadQuadTest()
-{
-	return load_mixer(MIXER_PATH(quad_test.mix), 5);
-}
+	MixerRegisterGroups _reg_groups = MixerRegisterGroups();
+	mixer_group.setRegGroups(&_reg_groups);
 
-bool MixerTest::loadVTOL1Test()
-{
-	return load_mixer(MIXER_PATH(vtol1_test.mix), 4);
-}
+	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_0].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+			(mixer_register_val_u *) _controls[0].control, true);
 
-bool MixerTest::loadVTOL2Test()
-{
-	return load_mixer(MIXER_PATH(vtol2_test.mix), 6);
-}
+	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_1].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+			(mixer_register_val_u *) _controls[1].control, true);
 
-bool MixerTest::loadComplexTest()
-{
-	return load_mixer(MIXER_PATH(complex_test.mix), 8);
-}
+	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_2].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+			(mixer_register_val_u *) _controls[2].control, true);
 
-bool MixerTest::loadAllTest()
-{
-	PX4_INFO("Testing all mixers in %s", MIXER_ONBOARD_PATH);
+	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_3].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+			(mixer_register_val_u *) _controls[3].control, true);
 
-	DIR *dp = opendir(MIXER_ONBOARD_PATH);
+	_reg_groups.register_groups[MixerRegisterGroups::REGS_OUTPUTS].setGroup(actuator_outputs_s::NUM_ACTUATOR_OUTPUTS,
+			(mixer_register_val_u *) outputs.output, false);
 
-	if (dp == nullptr) {
-		PX4_ERR("File open failed");
-		// this is not an FTP error, abort directory by simulating eof
+	printf("size of Mixer:%u\n", sizeof(Mixer));
+	printf("size of MixerOperator:%u\n", sizeof(MixerOperator));
+	printf("size of MixerAdd:%u\n", sizeof(MixerAdd));
+	printf("size of mixer_register_val_u:%u\n", sizeof(mixer_register_val_u));
+	printf("size of mixer_register_ref_s:%u\n", sizeof(mixer_register_ref_s));
+	printf("size of mixer_data_operator_s:%u\n", sizeof(mixer_data_operator_s));
+
+	uint8_t *mixbuff = (uint8_t *) malloc(256);
+
+	MixerParameters mixparams   = MixerParameters();
+	MixerVariables  mixvars     = MixerVariables();
+
+	MixerDataParser mixparser = MixerDataParser(&mixer_group, &mixparams, &_reg_groups, &mixvars);
+	mixer_datablock_header_s *hdr = (mixer_datablock_header_s *) mixbuff;
+
+
+	// Create and parse variables datablock
+	hdr = (mixer_datablock_header_s *) mixbuff;
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_VARIABLE_COUNT;
+	hdr->size = sizeof(mixer_variables_s);
+	mixer_variables_s *vars_size = (mixer_variables_s *) hdr->data;
+	vars_size->variable_count = 4;
+	printf("Parse variables datablock\n");
+	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
+
+	printf("Assign varraibles to register group\n");
+	_reg_groups.register_groups[MixerRegisterGroups::REGS_VARIABLES].setGroup(mixvars.count(),
+			mixvars.variables(), false);
+
+
+	// Create parameters datablock
+	hdr = (mixer_datablock_header_s *) mixbuff;
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_PARAMETERS;
+	hdr->size = sizeof(mixer_parameters_s);
+	mixer_parameters_s *params_size = (mixer_parameters_s *) hdr->data;
+	params_size->parameter_count = 1;
+	params_size->parameter_value_count = 1;
+	printf("Parse params datablock\n");
+	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
+
+	// Create parameter value datablock
+	hdr = (mixer_datablock_header_s *) mixbuff;
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_PARAM_VALUES;
+	mixer_param_values_s *valdata = (mixer_param_values_s *) hdr->data;
+	mixer_register_val_u *regval;
+	valdata->value_index = 0;
+	valdata->value_count = 1;
+	//set header size to value count
+	hdr->size = sizeof(mixer_param_values_s) + (valdata->value_count * sizeof(mixer_register_val_u)); //One value only
+	regval = (mixer_register_val_u *) valdata->values;
+	regval->floatval = 0.66666;
+	printf("Parse param values datablock\n");
+	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
+	// Assign parameters to parameter register group
+
+	printf("Assign params to param register group\n");
+	_reg_groups.register_groups[MixerRegisterGroups::REGS_PARAMS].setGroup(mixparams.paramCount(),
+			mixparams.paramValues(), true);
+
+	// Create parameter metadata datablock
+	hdr = (mixer_datablock_header_s *) mixbuff;
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_PARAMETER_METADATA;
+	hdr->size = sizeof(mixer_parameter_metadata_s);
+	mixer_parameter_metadata_s *metadata = (mixer_parameter_metadata_s *) hdr->data;
+	metadata->param_index = 0;
+	metadata->array_size = 1;
+	strncpy(metadata->name, "PARAM_1", 16);
+	printf("Parse parameter metadata datablock\n");
+	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
+
+	//TEST SINGLE MIXER DATABLOCK
+	hdr = (mixer_datablock_header_s *) mixbuff;
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_MIXER;
+	hdr->size = sizeof(mixer_data_operator_s);
+	mixer_data_operator_s *oppdata = (mixer_data_operator_s *) hdr->data;
+	oppdata->header.mixer_type = MIXER_TYPES_ADD;
+	oppdata->header.data_size = sizeof(mixer_data_operator_s);
+	oppdata->ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_left.index = actuator_controls_s::INDEX_ROLL;
+	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_right.index = actuator_controls_s::INDEX_PITCH;
+	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata->ref_out.index = 0;
+	printf("Parse mixer values datablock\n");
+	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
+
+
+	//TEST TWO MIXER DATABLOCKS IN ONE BUFFER LENGTH
+	int totalsize = 0;
+	hdr = (mixer_datablock_header_s *) mixbuff;
+	// Copy Control to output
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_MIXER;
+	hdr->size = sizeof(mixer_data_operator_s);
+	oppdata = (mixer_data_operator_s *) hdr->data;
+	oppdata->header.mixer_type = MIXER_TYPES_COPY;
+	oppdata->header.data_size = sizeof(mixer_data_operator_s);
+	oppdata->ref_left.group = 0x00;
+	oppdata->ref_left.index = 0x00;
+	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_right.index = actuator_controls_s::INDEX_PITCH;
+	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata->ref_out.index = 1;
+	// move header to next buffer location
+	totalsize = sizeof(mixer_datablock_header_s) + hdr->size;
+	hdr = (mixer_datablock_header_s *)(mixbuff + totalsize);
+	// Add control inputs to output
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_MIXER;
+	hdr->size = sizeof(mixer_data_operator_s);
+	oppdata = (mixer_data_operator_s *) hdr->data;
+	oppdata->header.mixer_type = MIXER_TYPES_ADD;
+	oppdata->header.data_size = sizeof(mixer_data_operator_s);
+	oppdata->ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_left.index = actuator_controls_s::INDEX_ROLL;
+	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_right.index = actuator_controls_s::INDEX_YAW;
+	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata->ref_out.index = 2;
+	// parse result
+	totalsize += (sizeof(mixer_datablock_header_s) + hdr->size);
+	printf("Parse double mixer datablocks\n");
+	mixparser.parse_buffer(mixbuff, totalsize);
+
+
+	//TEST MULTIPLE MIXERS IN ONE MIXER DATABLOCK
+	hdr = (mixer_datablock_header_s *) mixbuff;
+	hdr->start = MIXER_DATABLOCK_START;
+	hdr->type = MIXER_DATABLOCK_MIXER;
+	hdr->size = sizeof(mixer_data_operator_s);
+	totalsize = hdr->size;
+	//Multiply control with parameter to output
+	oppdata = (mixer_data_operator_s *) hdr->data;
+	oppdata->header.mixer_type = MIXER_TYPES_MULTIPLY;
+	oppdata->header.data_size = sizeof(mixer_data_operator_s);
+	oppdata->ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_left.index = actuator_controls_s::INDEX_THROTTLE;
+	oppdata->ref_right.group = MixerRegisterGroups::REGS_PARAMS;
+	oppdata->ref_right.index = 0;
+	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata->ref_out.index = 3;
+	//Copy control into varaibles
+	oppdata = (mixer_data_operator_s *)(hdr->data + hdr->size);
+	hdr->size += sizeof(mixer_data_operator_s);
+	oppdata->header.mixer_type = MIXER_TYPES_COPY;
+	oppdata->header.data_size = sizeof(mixer_data_operator_s);
+	oppdata->ref_left.group = 0x00;
+	oppdata->ref_left.index = 0x00;
+	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_right.index = actuator_controls_s::INDEX_THROTTLE;
+	oppdata->ref_out.group = MixerRegisterGroups::REGS_VARIABLES;
+	oppdata->ref_out.index = 0;
+	//Addconstant to variable
+	mixer_data_const_operator_s *oppcdata = (mixer_data_const_operator_s *)(hdr->data + hdr->size);
+	hdr->size += sizeof(mixer_data_const_operator_s);
+	oppcdata->header.mixer_type = MIXER_TYPES_ADD_CONST;
+	oppcdata->header.data_size = sizeof(mixer_data_const_operator_s);
+	oppcdata->constval.floatval = 0.5;
+	oppcdata->ref_in.group = MixerRegisterGroups::REGS_VARIABLES;
+	oppcdata->ref_in.index = 0;
+	oppcdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppcdata->ref_out.index = 4;
+
+//    //This mixer should fails since it is writing to a read only control
+//    oppdata = (mixer_data_operator_s *)(hdr->data + hdr->size);
+//    hdr->size += sizeof(mixer_data_operator_s);
+//    oppdata->header.mixer_type = MIXER_TYPES_COPY;
+//    oppdata->header.data_size = sizeof(mixer_data_operator_s);
+//    oppdata->ref_left.group = 0x00;
+//    oppdata->ref_left.index = 0x00;
+//    oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+//    oppdata->ref_right.index = actuator_controls_s::INDEX_THROTTLE;
+//    oppdata->ref_out.group = MixerRegisterGroups::REGS_CONTROL_0;
+//    oppdata->ref_out.index = 0;
+
+	printf("Parse multi mixers in single datablock with datasize:%u\n", hdr->size);
+	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
+
+
+	free(mixbuff);
+
+	int errindex =  mixer_group.check_mixers_valid();
+
+	if (errindex != -1) {
+		printf("Mixers %u is not valid\n", errindex);
 		return false;
 	}
 
-	struct dirent *result = nullptr;
+	// Binary scaled inputs for clear add results
+	_controls[0].control[0] = 0.01;
+	_controls[0].control[1] = 0.02;
+	_controls[0].control[2] = 0.04;
+	_controls[0].control[3] = 0.08;
+	_controls[0].control[4] = 0.16;
+	_controls[0].control[5] = 0.32;
+	_controls[0].control[6] = 0.64;
+	_controls[0].control[7] = 0.128;
 
-	// move to the requested offset
-	//seekdir(dp, payload->offset);
-
-	for (;;) {
-		errno = 0;
-		result = readdir(dp);
-
-		// read the directory entry
-		if (result == nullptr) {
-			if (errno) {
-				PX4_ERR("readdir failed");
-				closedir(dp);
-
-				return false;
-			}
-
-			// We are just at the last directory entry
-			break;
-		}
-
-		// Determine the directory entry type
-		switch (result->d_type) {
-#ifdef __PX4_NUTTX
-
-		case DTYPE_FILE:
-#else
-		case DT_REG:
-#endif
-			if (strncmp(result->d_name, ".", 1) != 0) {
-
-				char buf[PATH_MAX];
-				(void)strncpy(&buf[0], MIXER_ONBOARD_PATH, sizeof(buf) - 1);
-				/* enforce null termination */
-				buf[sizeof(buf) - 1] = '\0';
-				(void)strncpy(&buf[strlen(MIXER_ONBOARD_PATH)], "/", 1);
-				(void)strncpy(&buf[strlen(MIXER_ONBOARD_PATH) + 1], result->d_name, sizeof(buf) - strlen(MIXER_ONBOARD_PATH) - 1);
-
-				bool ret = load_mixer(buf, 0);
-
-				if (!ret) {
-					PX4_ERR("Error testing mixer %s", buf);
-					return false;
-				}
-			}
-
-			break;
-
-		default:
-			break;
+	/* default ports to disabled by setting output to NaN */
+	for (size_t i = 0; i < sizeof(outputs.output) / sizeof(outputs.output[0]); i++) {
+		if (i >= num_outputs) {
+			outputs.output[i] = NAN;
 		}
 	}
 
-	closedir(dp);
+	/* do mixing */
+	mixer_group.mix_group();
+	outputs.timestamp = hrt_absolute_time();
+
+	for (size_t i = 0; i < sizeof(outputs.output) / sizeof(outputs.output[0]); i++) {
+		if (outputs.output[i] != NAN) {
+			if (i < 6) {
+				printf("OP[%u]=%0.2f ", i, (double) outputs.output[i]);
+			}
+
+			num_outputs = i + 1;
+		}
+	}
 
 	return true;
 }
 
-bool MixerTest::load_mixer(const char *filename, unsigned expected_count, bool verbose)
-{
+
+
+//bool MixerTest::loadAllTest()
+//{
+//	PX4_INFO("Testing all mixers in %s", MIXER_ONBOARD_PATH);
+
+//	DIR *dp = opendir(MIXER_ONBOARD_PATH);
+
+//	if (dp == nullptr) {
+//		PX4_ERR("File open failed");
+//		// this is not an FTP error, abort directory by simulating eof
+//		return false;
+//	}
+
+//	struct dirent *result = nullptr;
+
+//	// move to the requested offset
+//	//seekdir(dp, payload->offset);
+
+//	for (;;) {
+//		errno = 0;
+//		result = readdir(dp);
+
+//		// read the directory entry
+//		if (result == nullptr) {
+//			if (errno) {
+//				PX4_ERR("readdir failed");
+//				closedir(dp);
+
+//				return false;
+//			}
+
+//			// We are just at the last directory entry
+//			break;
+//		}
+
+//		// Determine the directory entry type
+//		switch (result->d_type) {
+//#ifdef __PX4_NUTTX
+
+//		case DTYPE_FILE:
+//#else
+//		case DT_REG:
+//#endif
+//			if (strncmp(result->d_name, ".", 1) != 0) {
+
+//				char buf[PATH_MAX];
+//				(void)strncpy(&buf[0], MIXER_ONBOARD_PATH, sizeof(buf) - 1);
+//				/* enforce null termination */
+//				buf[sizeof(buf) - 1] = '\0';
+//				(void)strncpy(&buf[strlen(MIXER_ONBOARD_PATH)], "/", 1);
+//				(void)strncpy(&buf[strlen(MIXER_ONBOARD_PATH) + 1], result->d_name, sizeof(buf) - strlen(MIXER_ONBOARD_PATH) - 1);
+
+//				bool ret = load_mixer(buf, 0);
+
+//				if (!ret) {
+//					PX4_ERR("Error testing mixer %s", buf);
+//					return false;
+//				}
+//			}
+
+//			break;
+
+//		default:
+//			break;
+//		}
+//	}
+
+//	closedir(dp);
+
+//	return true;
+//}
+
+//bool MixerTest::load_mixer(const char *filename, unsigned expected_count, bool verbose)
+//{
 //	char buf[2048];
 
 //	load_mixer_file(filename, &buf[0], sizeof(buf));
@@ -262,15 +520,12 @@ bool MixerTest::load_mixer(const char *filename, unsigned expected_count, bool v
 //	}
 
 //	return true;
-	return false;
-}
+//}
 
-bool MixerTest::load_mixer(const char *filename, const char *buf, unsigned loaded, unsigned expected_count,
-			   const unsigned chunk_size,
-			   bool verbose)
-{
-
-
+//bool MixerTest::load_mixer(const char *filename, const char *buf, unsigned loaded, unsigned expected_count,
+//			   const unsigned chunk_size,
+//			   bool verbose)
+//{
 //	/* load the mixer in chunks, like
 //	 * in the case of a remote load,
 //	 * e.g. on PX4IO.
@@ -359,11 +614,10 @@ bool MixerTest::load_mixer(const char *filename, const char *buf, unsigned loade
 //	}
 
 //	return true;
-	return false;
-}
+//}
 
-bool MixerTest::mixerTest()
-{
+//bool MixerTest::mixerTest()
+//{
 //	/*
 //	 * PWM limit structure
 //	 */
@@ -592,8 +846,7 @@ bool MixerTest::mixerTest()
 //	}
 
 //	return true;
-	return false;
-}
+//}
 
 //static int
 //mixer_callback(uintptr_t handle, uint8_t control_group, uint8_t control_index, float &control)
