@@ -68,6 +68,10 @@
 
 #include <unit_test/unit_test.h>
 
+//#define debug(fmt, args...)	do { } while(0)
+#define debug(fmt, args...)	do { printf("[test_mixer] " fmt "\n", ##args); } while(0)
+
+
 //static int	mixer_callback(uintptr_t handle,
 //			       uint8_t control_group,
 //			       uint8_t control_index,
@@ -103,6 +107,8 @@ const unsigned output_max = 8;
 
 
 #define MIXER_VERBOSE
+
+#define MIXER_BUFFER_SIZE 64
 
 class MixerTest : public UnitTest
 {
@@ -180,7 +186,7 @@ bool MixerTest::mixerGroupFromDataTest()
 	actuator_outputs_s outputs = {};
 	size_t num_outputs = 16;
 
-	uint8_t *mixbuff = (uint8_t *) malloc(256);
+	uint8_t *mixbuff = (uint8_t *) malloc(MIXER_BUFFER_SIZE);
 	uint8_t *buffpos = mixbuff;
 
 	MixerRegisterGroups _reg_groups = MixerRegisterGroups();
@@ -193,78 +199,17 @@ bool MixerTest::mixerGroupFromDataTest()
 	_reg_groups.register_groups[MixerRegisterGroups::REGS_OUTPUTS].setGroup(actuator_outputs_s::NUM_ACTUATOR_OUTPUTS,
 			(mixer_register_val_u *) outputs.output, false);
 
-	mixer_data_operator_s *oppdata;
+	mixer_data_operator_s *oppdata = (mixer_data_operator_s *) buffpos;
 
-	//ADD
-	oppdata = (mixer_data_operator_s *) buffpos;
-	oppdata->header.mixer_type = MIXER_TYPES_ADD;
-	oppdata->header.data_size = sizeof(mixer_data_operator_s);
-	oppdata->ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata->ref_left.index = 0;
-	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata->ref_right.index = 1;
-	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppdata->ref_out.index = 0;
+	int expected_count = 0;
+	actuator_outputs_s expected_outputs = {};
 
-	buffpos += ((mixer_base_header_s *) buffpos)->data_size;
-
-	//COPY
-	oppdata = (mixer_data_operator_s *) buffpos;
-	oppdata->header.mixer_type = MIXER_TYPES_COPY;
-	oppdata->header.data_size = sizeof(mixer_data_operator_s);
-	oppdata->ref_left.group = 0x00;
-	oppdata->ref_left.index = 0x00;
-	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata->ref_right.index = 0;
-	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppdata->ref_out.index = 1;
-
-	buffpos += ((mixer_base_header_s *) buffpos)->data_size;
-
-	//MULTIPLY
-	oppdata = (mixer_data_operator_s *) buffpos;
-	oppdata->header.mixer_type = MIXER_TYPES_MULTIPLY;
-	oppdata->header.data_size = sizeof(mixer_data_operator_s);
-	oppdata->ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata->ref_left.index = 0;
-	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata->ref_right.index = 1;
-	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppdata->ref_out.index = 2;
-
-	buffpos += ((mixer_base_header_s *) buffpos)->data_size;
-
-	//ADD CONSTANT
-	mixer_data_const_operator_s *oppcdata;
-	oppcdata = (mixer_data_const_operator_s *) buffpos;
-	oppcdata->header.mixer_type = MIXER_TYPES_ADD_CONST;
-	oppcdata->header.data_size = sizeof(mixer_data_const_operator_s);
-	oppcdata->constval.floatval = 0.75;
-	oppcdata->ref_in.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppcdata->ref_in.index = 0;
-	oppcdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppcdata->ref_out.index = 3;
-
-	buffpos += ((mixer_base_header_s *) buffpos)->data_size;
-
-//    mixer_data_multipoint_s *multidata;
-
-	mixer_group.from_buffer(mixbuff, (buffpos - mixbuff));
-
-	memset(mixbuff, 0, 256);
-	free(mixbuff);
-
-
-	if (mixer_group.count() != 4) {
-		printf("Unit Test: mixerGroupFromDataTest: MixerGroup has wrong mixer count\n");
-		return false;
-	}
-
-	int valid = mixer_group.check_mixers_valid();
-
-	if (valid != 0) {
-		printf("Unit Test: mixerGroupFromDataTest: Mixers not valid at mixer:%u\n", 1 - valid);
-		return false;
+	/* default ports to disabled by setting output to NaN */
+	for (size_t i = 0; i < sizeof(outputs.output) / sizeof(outputs.output[0]); i++) {
+		if (i >= num_outputs) {
+			outputs.output[i] = NAN;
+			expected_outputs.output[i] = NAN;
+		}
 	}
 
 	// Binary scaled inputs for testable results
@@ -277,32 +222,102 @@ bool MixerTest::mixerGroupFromDataTest()
 	_controls[0].control[6] = 0.0078125;
 	_controls[0].control[7] = 0.00390625;
 
-	actuator_outputs_s expected_outputs = {};
+	//ADD
+	memset(mixbuff, 0, MIXER_BUFFER_SIZE);
+	oppdata->header.mixer_type = MIXER_TYPES_ADD;
+	oppdata->header.data_size = sizeof(mixer_data_operator_s);
+	oppdata->ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_left.index = 0;
+	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_right.index = 1;
+	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata->ref_out.index = 0;
 
-	/* default ports to disabled by setting output to NaN */
-	for (size_t i = 0; i < sizeof(outputs.output) / sizeof(outputs.output[0]); i++) {
-		if (i >= num_outputs) {
-			outputs.output[i] = NAN;
-			expected_outputs.output[i] = NAN;
-		}
+	if (mixer_group.from_buffer(mixbuff, sizeof(mixer_data_operator_s)) == -1) {
+		return false;
+	}
+
+	expected_count++;
+	expected_outputs.output[0] = 0.75;
+
+	//COPY
+	memset(mixbuff, 0, MIXER_BUFFER_SIZE);
+	oppdata->header.mixer_type = MIXER_TYPES_COPY;
+	oppdata->header.data_size = sizeof(mixer_data_operator_s);
+	oppdata->ref_left.group = 0x00;
+	oppdata->ref_left.index = 0x00;
+	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_right.index = 0;
+	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata->ref_out.index = 1;
+
+	if (mixer_group.from_buffer(mixbuff, sizeof(mixer_data_operator_s)) == -1) {
+		return false;
+	}
+
+	expected_count++;
+	expected_outputs.output[1] = 0.5;
+
+	//MULTIPLY
+	memset(mixbuff, 0, MIXER_BUFFER_SIZE);
+	oppdata->header.mixer_type = MIXER_TYPES_MULTIPLY;
+	oppdata->header.data_size = sizeof(mixer_data_operator_s);
+	oppdata->ref_left.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_left.index = 0;
+	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppdata->ref_right.index = 1;
+	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppdata->ref_out.index = 2;
+
+	if (mixer_group.from_buffer(mixbuff, sizeof(mixer_data_operator_s)) == -1) {
+		return false;
+	}
+
+	expected_count++;
+	expected_outputs.output[2] = 0.125;
+
+	//ADD CONSTANT
+	memset(mixbuff, 0, MIXER_BUFFER_SIZE);
+	mixer_data_const_operator_s *oppcdata = (mixer_data_const_operator_s *) buffpos;
+	oppcdata->header.mixer_type = MIXER_TYPES_ADD_CONST;
+	oppcdata->header.data_size = sizeof(mixer_data_const_operator_s);
+	oppcdata->constval.floatval = 0.75;
+	oppcdata->ref_in.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppcdata->ref_in.index = 0;
+	oppcdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+	oppcdata->ref_out.index = 3;
+
+	if (mixer_group.from_buffer(mixbuff, sizeof(mixer_data_const_operator_s)) == -1) {
+		return false;
+	}
+
+	expected_count++;
+	expected_outputs.output[3] = 1.25;
+
+	memset(mixbuff, 0, MIXER_BUFFER_SIZE);
+	free(mixbuff);
+
+	if (mixer_group.count() != 4) {
+		debug("mixerGroupFromDataTest: MixerGroup has wrong mixer count");
+		return false;
+	}
+
+	int valid = mixer_group.check_mixers_valid();
+
+	if (valid != 0) {
+		debug("mixerGroupFromDataTest: Mixers not valid at mixer:%u", 1 - valid);
+		return false;
 	}
 
 	//Do mixing
 	mixer_group.mix_group();
 
-	expected_outputs.output[0] = 0.75;
-	expected_outputs.output[1] = 0.5;
-	expected_outputs.output[2] = 0.125;
-	expected_outputs.output[3] = 1.25;
-
 	for (size_t i = 0; i < sizeof(outputs.output) / sizeof(outputs.output[0]); i++) {
 		if (outputs.output[i] != expected_outputs.output[i]) {
-			printf("Unit Test: mixerGroupFromDataTest: Output not correct for output:%u", i);
+			debug("mixerGroupFromDataTest: Output not correct for output:%u", i);
 			return false;
 		}
 	}
-
-	printf("\n");
 
 	return true;
 }
@@ -333,12 +348,12 @@ bool MixerTest::mixerParserTest()
 	_reg_groups.register_groups[MixerRegisterGroups::REGS_OUTPUTS].setGroup(actuator_outputs_s::NUM_ACTUATOR_OUTPUTS,
 			(mixer_register_val_u *) outputs.output, false);
 
-	printf("size of Mixer:%u\n", sizeof(Mixer));
-	printf("size of MixerOperator:%u\n", sizeof(MixerOperator));
-	printf("size of MixerAdd:%u\n", sizeof(MixerAdd));
-	printf("size of mixer_register_val_u:%u\n", sizeof(mixer_register_val_u));
-	printf("size of mixer_register_ref_s:%u\n", sizeof(mixer_register_ref_s));
-	printf("size of mixer_data_operator_s:%u\n", sizeof(mixer_data_operator_s));
+	debug("size of Mixer:%u", sizeof(Mixer));
+	debug("size of MixerOperator:%u", sizeof(MixerOperator));
+	debug("size of MixerAdd:%u", sizeof(MixerAdd));
+	debug("size of mixer_register_val_u:%u", sizeof(mixer_register_val_u));
+	debug("size of mixer_register_ref_s:%u", sizeof(mixer_register_ref_s));
+	debug("size of mixer_data_operator_s:%u", sizeof(mixer_data_operator_s));
 
 	uint8_t *mixbuff = (uint8_t *) malloc(256);
 
@@ -348,6 +363,7 @@ bool MixerTest::mixerParserTest()
 	MixerDataParser mixparser = MixerDataParser(&mixer_group, &mixparams, &_reg_groups, &mixvars);
 	mixer_datablock_header_s *hdr = (mixer_datablock_header_s *) mixbuff;
 
+	int expected_mixer_count = 0;
 
 	// Create and parse variables datablock
 	hdr = (mixer_datablock_header_s *) mixbuff;
@@ -356,10 +372,10 @@ bool MixerTest::mixerParserTest()
 	hdr->size = sizeof(mixer_variables_s);
 	mixer_variables_s *vars_size = (mixer_variables_s *) hdr->data;
 	vars_size->variable_count = 4;
-	printf("Parse variables datablock\n");
+	debug("Parse variables datablock");
 	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 
-	printf("Assign varraibles to register group\n");
+	debug("Assign varraibles to register group");
 	_reg_groups.register_groups[MixerRegisterGroups::REGS_VARIABLES].setGroup(mixvars.count(),
 			mixvars.variables(), false);
 
@@ -372,7 +388,7 @@ bool MixerTest::mixerParserTest()
 	mixer_parameters_s *params_size = (mixer_parameters_s *) hdr->data;
 	params_size->parameter_count = 1;
 	params_size->parameter_value_count = 1;
-	printf("Parse params datablock\n");
+	debug("Parse params datablock\n");
 	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 
 	// Create parameter value datablock
@@ -387,11 +403,11 @@ bool MixerTest::mixerParserTest()
 	hdr->size = sizeof(mixer_param_values_s) + (valdata->value_count * sizeof(mixer_register_val_u)); //One value only
 	regval = (mixer_register_val_u *) valdata->values;
 	regval->floatval = 0.66666;
-	printf("Parse param values datablock\n");
+	debug("Parse param values datablock");
 	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 	// Assign parameters to parameter register group
 
-	printf("Assign params to param register group\n");
+	debug("Assign params to param register group");
 	_reg_groups.register_groups[MixerRegisterGroups::REGS_PARAMS].setGroup(mixparams.paramCount(),
 			mixparams.paramValues(), true);
 
@@ -404,7 +420,7 @@ bool MixerTest::mixerParserTest()
 	metadata->param_index = 0;
 	metadata->array_size = 1;
 	strncpy(metadata->name, "PARAM_1", 16);
-	printf("Parse parameter metadata datablock\n");
+	debug("Parse parameter metadata datablock");
 	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 
 	//TEST SINGLE MIXER DATABLOCK
@@ -421,7 +437,8 @@ bool MixerTest::mixerParserTest()
 	oppdata->ref_right.index = actuator_controls_s::INDEX_PITCH;
 	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata->ref_out.index = 0;
-	printf("Parse mixer values datablock\n");
+	expected_mixer_count++;
+	debug("Parse mixer values datablock");
 	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 
 
@@ -441,6 +458,7 @@ bool MixerTest::mixerParserTest()
 	oppdata->ref_right.index = actuator_controls_s::INDEX_PITCH;
 	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata->ref_out.index = 1;
+	expected_mixer_count++;
 	// move header to next buffer location
 	totalsize = sizeof(mixer_datablock_header_s) + hdr->size;
 	hdr = (mixer_datablock_header_s *)(mixbuff + totalsize);
@@ -457,13 +475,14 @@ bool MixerTest::mixerParserTest()
 	oppdata->ref_right.index = actuator_controls_s::INDEX_YAW;
 	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata->ref_out.index = 2;
+	expected_mixer_count++;
 	// parse result
 	totalsize += (sizeof(mixer_datablock_header_s) + hdr->size);
-	printf("Parse double mixer datablocks\n");
+	debug("Parse double mixer datablocks");
 	mixparser.parse_buffer(mixbuff, totalsize);
 
 
-	//TEST MULTIPLE MIXERS IN ONE MIXER DATABLOCK
+	//TEST ???
 	hdr = (mixer_datablock_header_s *) mixbuff;
 	hdr->start = MIXER_DATABLOCK_START;
 	hdr->type = MIXER_DATABLOCK_MIXER;
@@ -479,27 +498,31 @@ bool MixerTest::mixerParserTest()
 	oppdata->ref_right.index = 0;
 	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata->ref_out.index = 3;
-	//Copy control into varaibles
-	oppdata = (mixer_data_operator_s *)(hdr->data + hdr->size);
-	hdr->size += sizeof(mixer_data_operator_s);
-	oppdata->header.mixer_type = MIXER_TYPES_COPY;
-	oppdata->header.data_size = sizeof(mixer_data_operator_s);
-	oppdata->ref_left.group = 0x00;
-	oppdata->ref_left.index = 0x00;
-	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppdata->ref_right.index = actuator_controls_s::INDEX_THROTTLE;
-	oppdata->ref_out.group = MixerRegisterGroups::REGS_VARIABLES;
-	oppdata->ref_out.index = 0;
-	//Addconstant to variable
-	mixer_data_const_operator_s *oppcdata = (mixer_data_const_operator_s *)(hdr->data + hdr->size);
-	hdr->size += sizeof(mixer_data_const_operator_s);
-	oppcdata->header.mixer_type = MIXER_TYPES_ADD_CONST;
-	oppcdata->header.data_size = sizeof(mixer_data_const_operator_s);
-	oppcdata->constval.floatval = 0.5;
-	oppcdata->ref_in.group = MixerRegisterGroups::REGS_VARIABLES;
-	oppcdata->ref_in.index = 0;
-	oppcdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-	oppcdata->ref_out.index = 4;
+	expected_mixer_count++;
+
+//    //Copy control into varaibles
+//	oppdata = (mixer_data_operator_s *)(hdr->data + hdr->size);
+//	hdr->size += sizeof(mixer_data_operator_s);
+//	oppdata->header.mixer_type = MIXER_TYPES_COPY;
+//	oppdata->header.data_size = sizeof(mixer_data_operator_s);
+//	oppdata->ref_left.group = 0x00;
+//	oppdata->ref_left.index = 0x00;
+//	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+//	oppdata->ref_right.index = actuator_controls_s::INDEX_THROTTLE;
+//	oppdata->ref_out.group = MixerRegisterGroups::REGS_VARIABLES;
+//	oppdata->ref_out.index = 0;
+//    expected_mixer_count++;
+//    //Addconstant to variable
+//	mixer_data_const_operator_s *oppcdata = (mixer_data_const_operator_s *)(hdr->data + hdr->size);
+//	hdr->size += sizeof(mixer_data_const_operator_s);
+//	oppcdata->header.mixer_type = MIXER_TYPES_ADD_CONST;
+//	oppcdata->header.data_size = sizeof(mixer_data_const_operator_s);
+//	oppcdata->constval.floatval = 0.5;
+//	oppcdata->ref_in.group = MixerRegisterGroups::REGS_VARIABLES;
+//	oppcdata->ref_in.index = 0;
+//	oppcdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
+//	oppcdata->ref_out.index = 4;
+//    expected_mixer_count++;
 
 //    //This mixer should fails since it is writing to a read only control
 //    oppdata = (mixer_data_operator_s *)(hdr->data + hdr->size);
@@ -513,17 +536,22 @@ bool MixerTest::mixerParserTest()
 //    oppdata->ref_out.group = MixerRegisterGroups::REGS_CONTROL_0;
 //    oppdata->ref_out.index = 0;
 
-	printf("Parse multi mixers in single datablock with datasize:%u\n", hdr->size);
+	debug("Parse multi mixers in single datablock with datasize:%u\n", hdr->size);
 	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 
 	// Clear memory biffer to check nothing is using it
 	memset(mixbuff, 0, 256);
 	free(mixbuff);
 
+	if (mixer_group.count() != expected_mixer_count) {
+		debug("Mixer count expected:%u but got:%u\n", expected_mixer_count, mixer_group.count());
+		return false;
+	}
+
 	int errindex =  mixer_group.check_mixers_valid();
 
 	if (errindex != 0) {
-		printf("Mixers %u is not valid\n", 1 - errindex);
+		debug("Mixers %u is not valid\n", 1 - errindex);
 		return false;
 	}
 
@@ -551,14 +579,12 @@ bool MixerTest::mixerParserTest()
 	for (size_t i = 0; i < sizeof(outputs.output) / sizeof(outputs.output[0]); i++) {
 		if (outputs.output[i] != NAN) {
 			if (i < 6) {
-				printf("OP[%u]=%0.2f ", i, (double) outputs.output[i]);
+				debug("OP[%u]=%0.2f ", i, (double) outputs.output[i]);
 			}
 
 			num_outputs = i + 1;
 		}
 	}
-
-	printf("\n");
 
 	return true;
 }

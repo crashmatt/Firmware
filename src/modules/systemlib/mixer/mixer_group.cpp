@@ -87,34 +87,15 @@ MixerGroup::append_mixer(Mixer *mixer)
 int
 MixerGroup::from_buffer(uint8_t *mixbuff, int bufflen)
 {
-	mixer_base_header_s *mixdata;
-	Mixer *new_mixer;
+	Mixer *new_mixer = MixerFactory::factory((mixer_base_header_s *) mixbuff);
 
-	int remaining = bufflen;
-
-	while (remaining > 0) {
-		mixdata = (mixer_base_header_s *) &mixbuff[bufflen - remaining];
-
-		if (mixdata->data_size == 0) {
-			return remaining;
-		}
-
-		if (mixdata->mixer_type == MIXER_TYPES_NONE) {
-			return remaining;
-		}
-
-		new_mixer = MixerFactory::factory(mixdata);
-
-		if (new_mixer == nullptr) {
-			return remaining;
-		}
-
-		append_mixer(new_mixer);
-
-		remaining -= mixdata->data_size;
+	if (new_mixer == nullptr) {
+		return -1;
 	}
 
-	return remaining;
+	append_mixer(new_mixer);
+
+	return 0;
 }
 
 
