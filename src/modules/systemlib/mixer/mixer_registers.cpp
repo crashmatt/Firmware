@@ -38,6 +38,7 @@
  */
 
 #include "mixer_registers.h"
+#include "string.h"
 
 static const char *register_group_names_table[MixerRegisterGroups::MIXER_REGISTER_GROUPS_MAX] = MIXER_REG_GROUP_NAMES;
 
@@ -86,6 +87,7 @@ MixerRegisterGroup::validRegister(uint16_t reg_index, bool read_only)
 MixerRegisterGroups::MixerRegisterGroups()
 	: register_groups()
 {
+	memset(&register_groups, 0, sizeof(register_groups));
 }
 
 bool MixerRegisterGroups::validRegister(mixer_register_ref_s *regref, bool read_only)

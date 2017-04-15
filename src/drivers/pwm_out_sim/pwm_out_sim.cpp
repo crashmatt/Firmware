@@ -392,8 +392,6 @@ PWMSim::task_main()
 	/* advertise the mixed control outputs, insist on the first group output */
 	_outputs_pub = orb_advertise(ORB_ID(actuator_outputs), &outputs);
 
-	_groups_required = 0x01;
-
 	/* loop until killed */
 	while (!_task_should_exit) {
 

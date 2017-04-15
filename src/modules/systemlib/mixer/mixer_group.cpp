@@ -156,14 +156,14 @@ MixerGroup::check_mixers_valid()
 
 	while (mix != nullptr) {
 		if (mix->mixerValid(_reg_groups) == false) {
-			return index;
+			return -1 - index ;
 		}
 
 		mix = mix->_next;
 		index++;
 	}
 
-	return -1;
+	return 0;
 }
 
 void
