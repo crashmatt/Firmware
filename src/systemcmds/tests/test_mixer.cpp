@@ -55,6 +55,9 @@
 #include <systemlib/err.h>
 #include <systemlib/mixer/mixers.h>
 #include <systemlib/mixer/mixer_data_parser.h>
+#include <systemlib/mixer/mixer_json_parser.h>
+#include <systemlib/mixer/mixer_load.h>
+
 #include <systemlib/pwm_limit/pwm_limit.h>
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_pwm_output.h>
@@ -119,6 +122,7 @@ public:
 private:
 	bool mixerGroupFromDataTest();
 	bool mixerParserTest();
+	bool mixerJsonParserTest();
 //	bool mixerTest();
 //	bool loadIOPass();
 //	bool loadVTOL1Test();
@@ -142,6 +146,7 @@ bool MixerTest::run_tests()
 {
 	ut_run_test(mixerGroupFromDataTest);
 	ut_run_test(mixerParserTest);
+	ut_run_test(mixerJsonParserTest);
 //	ut_run_test(loadQuadTest);
 //	ut_run_test(loadVTOL1Test);
 //	ut_run_test(loadVTOL2Test);
@@ -500,42 +505,6 @@ bool MixerTest::mixerParserTest()
 	oppdata->ref_out.index = 3;
 	expected_mixer_count++;
 
-//    //Copy control into varaibles
-//	oppdata = (mixer_data_operator_s *)(hdr->data + hdr->size);
-//	hdr->size += sizeof(mixer_data_operator_s);
-//	oppdata->header.mixer_type = MIXER_TYPES_COPY;
-//	oppdata->header.data_size = sizeof(mixer_data_operator_s);
-//	oppdata->ref_left.group = 0x00;
-//	oppdata->ref_left.index = 0x00;
-//	oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
-//	oppdata->ref_right.index = actuator_controls_s::INDEX_THROTTLE;
-//	oppdata->ref_out.group = MixerRegisterGroups::REGS_VARIABLES;
-//	oppdata->ref_out.index = 0;
-//    expected_mixer_count++;
-//    //Addconstant to variable
-//	mixer_data_const_operator_s *oppcdata = (mixer_data_const_operator_s *)(hdr->data + hdr->size);
-//	hdr->size += sizeof(mixer_data_const_operator_s);
-//	oppcdata->header.mixer_type = MIXER_TYPES_ADD_CONST;
-//	oppcdata->header.data_size = sizeof(mixer_data_const_operator_s);
-//	oppcdata->constval.floatval = 0.5;
-//	oppcdata->ref_in.group = MixerRegisterGroups::REGS_VARIABLES;
-//	oppcdata->ref_in.index = 0;
-//	oppcdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
-//	oppcdata->ref_out.index = 4;
-//    expected_mixer_count++;
-
-//    //This mixer should fails since it is writing to a read only control
-//    oppdata = (mixer_data_operator_s *)(hdr->data + hdr->size);
-//    hdr->size += sizeof(mixer_data_operator_s);
-//    oppdata->header.mixer_type = MIXER_TYPES_COPY;
-//    oppdata->header.data_size = sizeof(mixer_data_operator_s);
-//    oppdata->ref_left.group = 0x00;
-//    oppdata->ref_left.index = 0x00;
-//    oppdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
-//    oppdata->ref_right.index = actuator_controls_s::INDEX_THROTTLE;
-//    oppdata->ref_out.group = MixerRegisterGroups::REGS_CONTROL_0;
-//    oppdata->ref_out.index = 0;
-
 	debug("Parse multi mixers in single datablock with datasize:%u\n", hdr->size);
 	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 
@@ -589,7 +558,27 @@ bool MixerTest::mixerParserTest()
 	return true;
 }
 
+// tests behaviour of mixer parser when creating/setting data from data blocks
+bool MixerTest::mixerJsonParserTest()
+{
+	MixerJsonParser parser;
+	int		fd;
+//    FILE    *fp;
 
+	/* open the mixer definition file */
+	fd = open(MIXER_PATH(IO_pass.mix), O_RDONLY);
+//    fp = fopen(MIXER_PATH(IO_pass.mix), "r");
+
+	if (fd < 0) {
+		debug("file not found");
+		return false;
+	}
+
+	parser.parse(fd);
+
+	close(fd);
+	return true;
+}
 
 //bool MixerTest::loadAllTest()
 //{

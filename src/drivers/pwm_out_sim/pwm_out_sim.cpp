@@ -75,7 +75,7 @@
 
 #include <systemlib/systemlib.h>
 #include <systemlib/mixer/mixers.h>
-#include <systemlib/mixer/mixer_data_parser.h>
+#include <systemlib/mixer/mixer_json_parser.h>
 
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/actuator_armed.h>

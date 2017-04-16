@@ -43,6 +43,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 px4_add_module(
 	MODULE modules__systemlib__mixer
 	SRCS
+                tinybson.c
                 mixer_registers.cpp
                 mixer_variables.cpp
                 mixer.cpp
@@ -52,6 +53,7 @@ px4_add_module(
                 mixer_factory.cpp
                 mixer_parameters.cpp
                 mixer_data_parser.cpp
+                mixer_json_parser.cpp
 	DEPENDS
 		platforms__common
 #		mixer_gen
