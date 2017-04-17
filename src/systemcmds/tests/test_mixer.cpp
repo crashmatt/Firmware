@@ -75,13 +75,8 @@
 #define debug(fmt, args...)	do { printf("[test_mixer] " fmt "\n", ##args); } while(0)
 
 
-#define MOUNTPOINT PX4_ROOTFSDIR "/fs/microsd"
-static const char *kMixerJsonTestFile    = MOUNTPOINT "/test.json";
-
-//static int	mixer_callback(uintptr_t handle,
-//			       uint8_t control_group,
-//			       uint8_t control_index,
-//			       float &control);
+//#define MOUNTPOINT PX4_ROOTFSDIR "/fs/microsd"
+//static const char *kMixerJsonTestFile    = MOUNTPOINT "/test.json";
 
 const unsigned output_max = 8;
 //static float actuator_controls[output_max];
@@ -565,12 +560,41 @@ bool MixerTest::mixerParserTest()
 // tests behaviour of mixer parser when creating/setting data from data blocks
 bool MixerTest::mixerJsonParserTest()
 {
+	actuator_controls_s _controls[actuator_controls_s::NUM_ACTUATOR_CONTROL_GROUPS];
+	actuator_outputs_s outputs = {};
+
+	MixerRegisterGroups _reg_groups = MixerRegisterGroups();
+	mixer_group.setRegGroups(&_reg_groups);
+	mixer_group.reset();
+
+	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_0].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+			(mixer_register_val_u *) _controls[0].control, true);
+
+	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_1].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+			(mixer_register_val_u *) _controls[1].control, true);
+
+	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_2].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+			(mixer_register_val_u *) _controls[2].control, true);
+
+	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_3].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+			(mixer_register_val_u *) _controls[3].control, true);
+
+	_reg_groups.register_groups[MixerRegisterGroups::REGS_OUTPUTS].setGroup(actuator_outputs_s::NUM_ACTUATOR_OUTPUTS,
+			(mixer_register_val_u *) outputs.output, false);
+
+	MixerParameters mixparams   = MixerParameters();
+	MixerVariables  mixvars     = MixerVariables();
+
+	MixerDataParser mixparser = MixerDataParser(&mixer_group, &mixparams, &_reg_groups, &mixvars);
+
 	MixerJsonParser parser;
+	parser.setDataParser(&mixparser);
+
 	FILE    *fp;
 	char    buff[2048];
 
 	/* open the mixer definition file */
-	fp = fopen(kMixerJsonTestFile, "r");
+	fp = fopen(MIXER_PATH(mixer.json), "r");
 
 	if (fp == nullptr) {
 		debug("file not found");
@@ -590,8 +614,6 @@ bool MixerTest::mixerJsonParserTest()
 	parser.parse_json(buff, 2046);
 
 	return true;
-
-
 }
 
 // tests behaviour of mixer parser when creating/setting data from data blocks

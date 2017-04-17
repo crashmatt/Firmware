@@ -1,0 +1,58 @@
+{
+	"Groups" : {
+		"CONTROLS" : {
+			"index" : 0,
+			"readOnly" : true,
+			"Entries" : ["ROLL", "PITCH", "YAW", "THROTTLE"]
+		},
+		"CONTROL_1" : {
+			"index" : 1,
+			"readOnly" : true
+		},
+		"OUTPUTS" : {
+			"index" : 4,
+			"readOnly" : true,
+			"Entries" : ["ELEVATOR", "AILERON", "RUDDER", "THROTTLE"]
+		},
+		"PARAMS" : {
+			"index" : 5,
+			"readOnly" : true,
+			"values" : [
+				[ "scale", [0.8] ],
+				[ "offset", [0.05] ],
+				[ "flap_3pt_in", [-0.9, 0.0, 1.1] ]
+			]
+		},
+		"VARS" : {
+			"index" : 6,
+			"readOnly" : false,
+			"values" : {
+				"flap_demand" : [0.0],
+				"pitch_demand" : [0.0]
+			}
+		}
+	},
+	"Mixers" : {
+		"Add" : {
+			"ref_left" : [0,0],
+			"ref_right:" : [0,1],
+			"ref_out": [4,0]
+		},
+		"Multiply" : {
+			"ref_left" : "CONTROLS[0]",
+			"ref_right": "CONTROLS[1]",
+			"ref_out": "OUTPUTS[1]"
+		},
+		"AddConst" : {
+			"ref_in" : "CONTROLS[1]",
+			"const": -0.5,
+			"ref_out": "OUTPUTS[2]"
+		},
+		"Add" : {
+			"ref_left" : "CONTROLS[ROLL]",
+			"ref_right:" : "offset",
+			"ref_out": "OUTPUTS[AILERON_LFT]"
+		}
+	}
+
+}

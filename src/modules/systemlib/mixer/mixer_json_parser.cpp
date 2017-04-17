@@ -67,6 +67,7 @@ extern "C" {
 
 #include "mixer_json_parser.h"
 #include "mixer_data_parser.h"
+#include "mixer_data.h"
 
 using namespace json11;
 using std::string;
@@ -135,30 +136,48 @@ int
 MixerJsonParser::parse_json(char *buff, int len)
 {
 	UNUSED(len);
-	UNUSED(buff);
+	uint8_t mixdata[120];
 
-//    const string txt = buff;
-	std::cout << "Original buff " << buff << "\n";
+	if (_data_parser == nullptr) {
+		return -1;
+	}
 
-//    const string simple_test =
-//        R"({"k1":"v1", "k2":42, "k3":["a",123,true,false,null]})";
+	mixer_datablock_header_s *blk_hdr = (mixer_datablock_header_s *) &mixdata;
+	blk_hdr->start = MIXER_DATABLOCK_START;
 
-//    strcpy(buff, R"({"k1":"v1", "k2":42, "k3":["a",123,true,false,null]})");
-//    std::cout << "Copied to buff " << buff << "\n";
+//	std::cout << "Original buff " << buff << "\n";
 
 	string err;
 	const auto json = Json::parse(buff, err);
+	std::cout <<  "error - " << err << "\n";
 
-	std::cout << "error is " << err << "\n";
-	std::cout << "k1: " << json["k1"].string_value() << "\n";
-	std::cout << "k3: " << json["k3"].dump() << "\n";
-	std::cout << "Groups.PARAMS: " << json["Groups"]["PARAMS"].dump() << "\n";
-	std::cout << "Groups.PARAMS: " << json["Gruppy"]["PARAMS"].dump() << "\n";
+//	std::cout << "Groups.PARAMS: " << json["Groups"]["PARAMS"].dump() << "\n";
 
-	for (auto &k : json["k3"].array_items()) {
-		std::cout << "    - " << k.dump() << "\n";
+//	for (auto &k : json["k3"].array_items()) {
+//		std::cout << "    - " << k.dump() << "\n";
+//	}
+
+	int param_count = 0;
+	int value_count = 0;
+	UNUSED(value_count);
+
+	// Check if params are declared and parse them
+	if (!json["Groups"]["PARAMS"]["values"].is_null()) {
+		for (auto &k : json["Groups"]["PARAMS"]["values"].array_items()) {
+			std::cout << "    - " << k.dump() << "\n";
+			value_count += k[1].array_items().size();
+			param_count++;
+		}
+
+		blk_hdr->type = MIXER_DATABLOCK_PARAMETERS;
+		blk_hdr->size = sizeof(mixer_parameters_s);
+		mixer_parameters_s *params = (mixer_parameters_s *) blk_hdr->data;
+		params->parameter_count = param_count;
+		params->parameter_value_count = value_count;
+		_data_parser->parse_buffer(mixdata, sizeof(mixer_datablock_header_s) + blk_hdr->size);
 	}
 
+	std::cout <<  "para count:" << param_count << "  value count:" << value_count << "\n";
 
 	return 0;
 }
