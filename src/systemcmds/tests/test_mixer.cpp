@@ -75,6 +75,9 @@
 #define debug(fmt, args...)	do { printf("[test_mixer] " fmt "\n", ##args); } while(0)
 
 
+#define MOUNTPOINT PX4_ROOTFSDIR "/fs/microsd"
+static const char *kMixerJsonTestFile    = MOUNTPOINT "/test.json";
+
 //static int	mixer_callback(uintptr_t handle,
 //			       uint8_t control_group,
 //			       uint8_t control_index,
@@ -123,6 +126,7 @@ private:
 	bool mixerGroupFromDataTest();
 	bool mixerParserTest();
 	bool mixerJsonParserTest();
+	bool mixerBsonParserTest();
 //	bool mixerTest();
 //	bool loadIOPass();
 //	bool loadVTOL1Test();
@@ -562,22 +566,54 @@ bool MixerTest::mixerParserTest()
 bool MixerTest::mixerJsonParserTest()
 {
 	MixerJsonParser parser;
-	int		fd;
-//    FILE    *fp;
+	FILE    *fp;
+	char    buff[2048];
 
 	/* open the mixer definition file */
-	fd = open(MIXER_PATH(IO_pass.mix), O_RDONLY);
-//    fp = fopen(MIXER_PATH(IO_pass.mix), "r");
+	fp = fopen(kMixerJsonTestFile, "r");
 
-	if (fd < 0) {
+	if (fp == nullptr) {
 		debug("file not found");
 		return false;
 	}
 
-	parser.parse(fd);
+	size_t newLen = fread(buff, sizeof(char), 2046, fp);
 
-	close(fd);
+	if (newLen == 0) {
+		fputs("Error reading file", stderr);
+		fclose(fp);
+		return false;
+	}
+
+	buff[newLen] = '\0'; /* Just to be safe. */
+
+	parser.parse_json(buff, 2046);
+
 	return true;
+
+
+}
+
+// tests behaviour of mixer parser when creating/setting data from data blocks
+bool MixerTest::mixerBsonParserTest()
+{
+//	MixerJsonParser parser;
+//	int		fd;
+////    FILE    *fp;
+
+//	/* open the mixer definition file */
+//	fd = open(MIXER_PATH(IO_pass.mix), O_RDONLY);
+////    fp = fopen(MIXER_PATH(IO_pass.mix), "r");
+
+//	if (fd < 0) {
+//		debug("file not found");
+//		return false;
+//	}
+
+//    parser.parse_bson(fd);
+
+//	close(fd);
+	return false;
 }
 
 //bool MixerTest::loadAllTest()

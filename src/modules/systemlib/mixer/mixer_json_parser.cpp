@@ -36,10 +36,25 @@
  *
  */
 
+/*
+ * Enable or disable code which demonstrates the behavior change in Xcode 7 / Clang 3.7,
+ * introduced by DR1467 and described here: https://github.com/dropbox/json11/issues/86
+ * Defaults to off since it doesn't appear the standards committee is likely to act
+ * on this, so it needs to be considered normal behavior.
+ */
+#ifndef JSON11_ENABLE_DR1467_CANARY
+#define JSON11_ENABLE_DR1467_CANARY 0
+#endif
+
+
 //#include <iostream>
 #include <string>
 #include <vector>
 #include <stdint.h>
+
+#include <cstdio>
+#include <cstring>
+#include <iostream>
 
 //#include "systemlib/uthash/utarray.h"
 
@@ -48,8 +63,13 @@ extern "C" {
 //#include <systemlib/bson/tinybson.h>
 }
 
+#include "json11.hpp"
+
 #include "mixer_json_parser.h"
 #include "mixer_data_parser.h"
+
+using namespace json11;
+using std::string;
 
 
 //#define debug(fmt, args...)	do { } while(0)
@@ -57,6 +77,7 @@ extern "C" {
 
 #define UNUSED(x) (void)(x)
 #define MIXER_SCRIPT_MAX_LINE_LENGTH 120
+
 
 /****************************************************************************/
 
@@ -111,7 +132,41 @@ MixerJsonParser::MixerJsonParser(MixerDataParser *data_parser)
 
 
 int
-MixerJsonParser::parse(int fd)
+MixerJsonParser::parse_json(char *buff, int len)
+{
+	UNUSED(len);
+	UNUSED(buff);
+
+//    const string txt = buff;
+	std::cout << "Original buff " << buff << "\n";
+
+//    const string simple_test =
+//        R"({"k1":"v1", "k2":42, "k3":["a",123,true,false,null]})";
+
+//    strcpy(buff, R"({"k1":"v1", "k2":42, "k3":["a",123,true,false,null]})");
+//    std::cout << "Copied to buff " << buff << "\n";
+
+	string err;
+	const auto json = Json::parse(buff, err);
+
+	std::cout << "error is " << err << "\n";
+	std::cout << "k1: " << json["k1"].string_value() << "\n";
+	std::cout << "k3: " << json["k3"].dump() << "\n";
+	std::cout << "Groups.PARAMS: " << json["Groups"]["PARAMS"].dump() << "\n";
+	std::cout << "Groups.PARAMS: " << json["Gruppy"]["PARAMS"].dump() << "\n";
+
+	for (auto &k : json["k3"].array_items()) {
+		std::cout << "    - " << k.dump() << "\n";
+	}
+
+
+	return 0;
+}
+
+
+
+int
+MixerJsonParser::parse_bson(int fd)
 {
 	UNUSED(fd);
 
@@ -120,15 +175,6 @@ MixerJsonParser::parse(int fd)
 	struct bson_decoder_s decoder;
 	int result = -1;
 	struct mixer_load_state state;
-
-//    uint8_t buffer[2048];
-//    size_t buf_size = 2048;
-
-//    if (bson_decoder_init_buf(&decoder, &buffer, buf_size, mixer_json_parse_callback, &state)) {
-//        debug("decoder init failed");
-//        goto out;
-
-//    }
 
 	if (bson_decoder_init_file(&decoder, fd, mixer_json_parse_callback, &state) != 0) {
 		debug("decoder init failed");

@@ -57,7 +57,8 @@ public:
 	MixerJsonParser(MixerDataParser *data_parser = nullptr);
 
 	void setDataParser(MixerDataParser *data_parser) {_data_parser = data_parser;}
-	int parse(int fd);
+	int parse_bson(int fd);
+	int parse_json(char *buff, int len);
 
 protected:
 	int _parse_line(char *line);

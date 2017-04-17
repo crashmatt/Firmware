@@ -44,6 +44,7 @@ px4_add_module(
 	MODULE modules__systemlib__mixer
 	SRCS
                 tinybson.c
+                json11.cpp
                 mixer_registers.cpp
                 mixer_variables.cpp
                 mixer.cpp
