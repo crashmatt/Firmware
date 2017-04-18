@@ -50,11 +50,12 @@
 //#include <iostream>
 #include <string>
 #include <vector>
+#include <iostream>
+#include <iterator>
 #include <stdint.h>
 
 #include <cstdio>
 #include <cstring>
-#include <iostream>
 
 //#include "systemlib/uthash/utarray.h"
 
@@ -62,6 +63,10 @@ extern "C" {
 #include "tinybson.h"
 //#include <systemlib/bson/tinybson.h>
 }
+
+#define PICOJSON_NO_EXCEPTIONS 1
+#define PICOJSON_FLOAT_PRECISION 10
+#include "picojson.h"
 
 #include "json11.hpp"
 
@@ -82,44 +87,6 @@ using std::string;
 
 /****************************************************************************/
 
-
-
-struct mixer_load_state {
-	bool mark_saved;
-};
-
-static int
-mixer_json_parse_callback(bson_decoder_t decoder, void *priv, bson_node_t node)
-{
-//    float f;
-//    int32_t i;
-//    void *v = NULL;
-	void *tmp = NULL;
-	int result = -1;
-	struct mixer_load_state *state = (struct mixer_load_state *)priv;
-	UNUSED(state);
-
-	/*
-	 * EOO means the end of the parameter object. (Currently not supporting
-	 * nested BSON objects).
-	 */
-	if (node->type == BSON_EOO) {
-		debug("end of mixer file");
-		result = -1;
-		goto out;
-	}
-
-	/* don't return zero, that means EOF */
-	result = 1;
-
-out:
-
-	if (tmp != NULL) {
-		free(tmp);
-	}
-
-	return result;
-}
 
 
 
@@ -182,6 +149,105 @@ MixerJsonParser::parse_json(char *buff, int len)
 	return 0;
 }
 
+/****************************************************************************/
+
+namespace
+{
+
+class root_context : public picojson::null_parse_context
+{
+public:
+//  bool parse_array_start() {
+//    return false; // Only allow array as root
+//  }
+
+	template <typename Iter> bool parse_array_item(picojson::input<Iter> &in, size_t)
+	{
+		picojson::value item;
+		// parse the array item
+		picojson::default_parse_context ctx(&item);
+
+		if (!picojson::_parse(ctx, in)) {
+			return false;
+		}
+
+		// assert that the array item is a hash
+		if (!item.is<picojson::object>()) {
+			return false;
+		}
+
+		// print x and y
+		std::cout << item.get("x") << ',' << item.get("y").to_str() << std::endl;
+		return true;
+	}
+};
+}
+
+int
+MixerJsonParser::parse_picojson(std::istream *is)
+{
+//    char buff[2048];
+//    while(!(is->eof() || is->fail())){
+//        is->read(buff, sizeof(buff));
+//        picojson::_parse(ctx, std::istream_iterator<char>(buff), std::istream_iterator<char>(), &err);
+//    }
+
+//    std::cerr << std::endl << is->rdbuf() << std::endl;
+
+	root_context ctx;
+	std::string err;
+
+	picojson::_parse(ctx, std::istreambuf_iterator<char>(*is), std::istreambuf_iterator<char>(), &err);
+
+	std::cerr << picojson::get_last_error() << std::endl;
+
+	if (!err.empty()) {
+		std::cerr << err << std::endl;
+		return -1;
+	}
+
+	return 0;
+}
+
+/****************************************************************************/
+
+struct mixer_load_state {
+	bool mark_saved;
+};
+
+static int
+mixer_bson_parse_callback(bson_decoder_t decoder, void *priv, bson_node_t node)
+{
+//    float f;
+//    int32_t i;
+//    void *v = NULL;
+	void *tmp = NULL;
+	int result = -1;
+	struct mixer_load_state *state = (struct mixer_load_state *)priv;
+	UNUSED(state);
+
+	/*
+	 * EOO means the end of the parameter object. (Currently not supporting
+	 * nested BSON objects).
+	 */
+	if (node->type == BSON_EOO) {
+		debug("end of mixer file");
+		result = -1;
+		goto out;
+	}
+
+	/* don't return zero, that means EOF */
+	result = 1;
+
+out:
+
+	if (tmp != NULL) {
+		free(tmp);
+	}
+
+	return result;
+}
+
 
 
 int
@@ -195,7 +261,7 @@ MixerJsonParser::parse_bson(int fd)
 	int result = -1;
 	struct mixer_load_state state;
 
-	if (bson_decoder_init_file(&decoder, fd, mixer_json_parse_callback, &state) != 0) {
+	if (bson_decoder_init_file(&decoder, fd, mixer_bson_parse_callback, &state) != 0) {
 		debug("decoder init failed");
 		goto out;
 	}

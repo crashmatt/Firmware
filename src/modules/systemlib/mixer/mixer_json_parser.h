@@ -45,7 +45,7 @@
 
 
 class MixerDataParser;
-
+#include <istream>
 
 /**
  * Class responsible for parsing mixer script into data objects consumed by MixerDataParser
@@ -59,6 +59,7 @@ public:
 	void setDataParser(MixerDataParser *data_parser) {_data_parser = data_parser;}
 	int parse_bson(int fd);
 	int parse_json(char *buff, int len);
+	int parse_picojson(std::istream *is);
 
 protected:
 	int _parse_line(char *line);
