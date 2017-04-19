@@ -41,3 +41,6 @@
 [submodule "src/drivers/gps/devices"]
 	path = src/drivers/gps/devices
 	url = https://github.com/PX4/GpsDrivers.git
+[submodule "src/lib/picojson"]
+	path = src/lib/picojson
+	url = https://github.com/crashmatt/picojson.git
