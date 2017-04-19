@@ -60,13 +60,13 @@
 //#include "systemlib/uthash/utarray.h"
 
 extern "C" {
-#include "tinybson.h"
+#include "tinybson.h"   //Local copy has fixes for cpp
 //#include <systemlib/bson/tinybson.h>
 }
 
 #define PICOJSON_NO_EXCEPTIONS 1
 #define PICOJSON_FLOAT_PRECISION 10
-#include "picojson.h"
+#include <lib/picojson/picojson.h>
 
 #include "json11.hpp"
 
@@ -112,21 +112,20 @@ MixerJsonParser::parse_json(char *buff, int len)
 	mixer_datablock_header_s *blk_hdr = (mixer_datablock_header_s *) &mixdata;
 	blk_hdr->start = MIXER_DATABLOCK_START;
 
-//	std::cout << "Original buff " << buff << "\n";
-
 	string err;
 	const auto json = Json::parse(buff, err);
 	std::cout <<  "error - " << err << "\n";
 
-//	std::cout << "Groups.PARAMS: " << json["Groups"]["PARAMS"].dump() << "\n";
-
-//	for (auto &k : json["k3"].array_items()) {
-//		std::cout << "    - " << k.dump() << "\n";
-//	}
-
 	int param_count = 0;
 	int value_count = 0;
+	int group_count = 0;
 	UNUSED(value_count);
+
+	// Count the groups
+	if (!json["Groups"].is_null()) {
+		auto &k = json["Groups"].object_items();
+		group_count = k.size();
+	}
 
 	// Check if params are declared and parse them
 	if (!json["Groups"]["PARAMS"]["values"].is_null()) {
@@ -144,7 +143,9 @@ MixerJsonParser::parse_json(char *buff, int len)
 		_data_parser->parse_buffer(mixdata, sizeof(mixer_datablock_header_s) + blk_hdr->size);
 	}
 
-	std::cout <<  "para count:" << param_count << "  value count:" << value_count << "\n";
+	std::cout  <<  "group_count:" << group_count
+		   <<  "  para_count:" << param_count
+		   << "   value_count:" << value_count << "\n";
 
 	return 0;
 }
@@ -154,12 +155,74 @@ MixerJsonParser::parse_json(char *buff, int len)
 namespace
 {
 
-class root_context : public picojson::null_parse_context
+class mixer_context : public  picojson::null_parse_context
 {
+protected:
+	enum {
+		MIXCONTEXT_NULL = 0,
+		MIXCONTEXT_ROOT,
+		MIXCONTEXT_GROUPS = 100,
+		MIXCONTEXT_GROUP,
+		MIXCONTEXT_GROUP_ENTRIES,
+		MIXCONTEXT_GROUP_VALUES,
+		MIXCONTEXT_MIXERS = 200,
+		MIXCONTEXT_MIXER,
+	};
+
+	int state_;
+	picojson::value *out_;
+
 public:
-//  bool parse_array_start() {
-//    return false; // Only allow array as root
-//  }
+
+	mixer_context(picojson::value *out)
+		:  picojson::null_parse_context()
+		, state_(MIXCONTEXT_NULL)
+		, out_(out)
+	{
+	}
+
+	struct dummy_str {
+		void push_back(int)
+		{
+		}
+	};
+
+	bool set_null()
+	{
+		*out_ = picojson::value();
+		return true;
+	}
+	bool set_bool(bool b)
+	{
+		*out_ = picojson::value(b);
+		return true;
+	}
+#ifdef PICOJSON_USE_INT64
+	bool set_int64(int64_t)
+	{
+		*out_ = picojson::value(i);
+		return true;
+	}
+#endif
+	bool set_number(double f)
+	{
+		*out_ = picojson::value(f);
+		return true;
+	}
+	template <typename Iter> bool parse_string(picojson::input<Iter> &in)
+	{
+		*out_ = picojson::value(picojson::string_type, false);
+		return picojson::_parse_string(out_->get<std::string>(), in);
+	}
+	bool parse_array_start()
+	{
+		*out_ = picojson::value(picojson::array_type, false);
+		return true;
+	}
+//    template <typename Iter> bool parse_array_item(input<Iter> &in, size_t)
+//    {
+//        return _parse(*this, in);
+//    }
 
 	template <typename Iter> bool parse_array_item(picojson::input<Iter> &in, size_t)
 	{
@@ -176,26 +239,40 @@ public:
 			return false;
 		}
 
-		// print x and y
-		std::cout << item.get("x") << ',' << item.get("y").to_str() << std::endl;
 		return true;
 	}
+
+
+	bool parse_array_stop(size_t)
+	{
+		return true;
+	}
+	bool parse_object_start()
+	{
+		*out_ = picojson::value(picojson::object_type, false);
+		return true;
+	}
+	template <typename Iter> bool parse_object_item(picojson::input<Iter> &in, const std::string &key)
+	{
+		picojson::object &o = out_->get<picojson::object>();
+		picojson::default_parse_context ctx(&o[key]);
+
+		std::cerr << "object key : " << key << std::endl;
+		return picojson::_parse(ctx, in);
+	}
+
+private:
+	mixer_context(const mixer_context &);
+	mixer_context &operator=(const mixer_context &);
 };
-}
+}       //namespace
 
 int
 MixerJsonParser::parse_picojson(std::istream *is)
 {
-//    char buff[2048];
-//    while(!(is->eof() || is->fail())){
-//        is->read(buff, sizeof(buff));
-//        picojson::_parse(ctx, std::istream_iterator<char>(buff), std::istream_iterator<char>(), &err);
-//    }
-
-//    std::cerr << std::endl << is->rdbuf() << std::endl;
-
-	root_context ctx;
 	std::string err;
+	picojson::value out;
+	mixer_context ctx(&out);
 
 	picojson::_parse(ctx, std::istreambuf_iterator<char>(*is), std::istreambuf_iterator<char>(), &err);
 

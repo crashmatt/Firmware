@@ -27,10 +27,10 @@
 		"VARS" : {
 			"index" : 6,
 			"readOnly" : false,
-			"values" : {
-				"flap_demand" : [0.0],
-				"pitch_demand" : [0.0]
-			}
+			"values" : [
+				["flap_demand" , [0.0]],
+				["pitch_demand" , [0.0]]
+			]
 		}
 	},
 	"Mixers" : {
