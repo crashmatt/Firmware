@@ -125,9 +125,9 @@ public:
 private:
 	bool mixerGroupFromDataTest();
 	bool mixerParserTest();
-    bool mixerJson11ParserTest();
-    bool mixerPicoJsonParserTest();
-    bool mixerBsonParserTest();
+	bool mixerJson11ParserTest();
+	bool mixerPicoJsonParserTest();
+	bool mixerBsonParserTest();
 //	bool mixerTest();
 //	bool loadIOPass();
 //	bool loadVTOL1Test();
@@ -151,8 +151,8 @@ bool MixerTest::run_tests()
 {
 	ut_run_test(mixerGroupFromDataTest);
 	ut_run_test(mixerParserTest);
-    ut_run_test(mixerJson11ParserTest);
-    ut_run_test(mixerPicoJsonParserTest);
+	ut_run_test(mixerJson11ParserTest);
+	ut_run_test(mixerPicoJsonParserTest);
 //	ut_run_test(loadQuadTest);
 //	ut_run_test(loadVTOL1Test);
 //	ut_run_test(loadVTOL2Test);
@@ -642,30 +642,31 @@ bool MixerTest::mixerBsonParserTest()
 //    parser.parse_bson(fd);
 
 //	close(fd);
-    return false;
+	return false;
 }
 
 // tests behaviour of cjosn parser
 bool MixerTest::mixerPicoJsonParserTest()
 {
-    MixerJsonParser parser;
+	MixerJsonParser parser;
 
-    /* open the mixer definition file */
+	/* open the mixer definition file */
 //	fd = open(MIXER_PATH(IO_pass.mix), O_RDONLY);
 //    fp = fopen(MIXER_PATH(mixer.json), "r");
-    std::ifstream fs(MIXER_PATH(mixer.json));
+	std::ifstream fs(MIXER_PATH(mixer.json));
 
-    if(!fs){
-        debug("Could not open file at %s", MIXER_PATH(mixer.json));
-        return false;
-    }
+	if (!fs) {
+		debug("Could not open file at %s", MIXER_PATH(mixer.json));
+		return false;
+	}
 
-    if(!fs.is_open())
-        return false;
+	if (!fs.is_open()) {
+		return false;
+	}
 
-    parser.parse_picojson(&fs);
+	parser.parse_picojson(&fs);
 
-    return true;
+	return true;
 }
 
 //bool MixerTest::loadAllTest()
