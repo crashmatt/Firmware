@@ -1,59 +1,56 @@
 {
-	"Groups" : {
-		"CONTROLS" : {
-			"index" : 0,
-			"readOnly" : true,
-			"Entries" : ["ROLL", "PITCH", "YAW", "THROTTLE"]
-		},
-		"CONTROL_1" : {
-			"index" : 1,
-			"readOnly" : true
-		},
-		"OUTPUTS" : {
-			"index" : 4,
-			"readOnly" : true,
-			"Entries" : ["ELEVATOR", "AILERON", "RUDDER", "THROTTLE"]
-		},
-		"PARAMS" : {
-			"index" : 5,
-			"readOnly" : true,
-			"values" : [
-				[ "scale", [0.8] ],
-				[ "offset", [0.05] ],
-				[ "flap_3pt_in", [-1.0, 0.0, 1.1] ],
-				[ "flap_3pt_out", [-0.5, 0.0, 1.0] ]
-			]
-		},
-		"VARS" : {
-			"index" : 6,
-			"readOnly" : false,
-			"values" : [
-				["flap_demand" , [0.0]],
-				["pitch_demand" , [0.0]]
-			]
-		}
-	},
-	"Mixers" : {
-		"Add" : {
-			"ref_left" : [0,0],
-			"ref_right:" : [0,1],
-			"ref_out": [4,0]
-		},
-		"Multiply" : {
-			"ref_left" : "CONTROLS[0]",
-			"ref_right": "CONTROLS[1]",
-			"ref_out": "OUTPUTS[1]"
-		},
-		"AddConst" : {
-			"ref_in" : "CONTROLS[1]",
-			"const": -0.5,
-			"ref_out": "OUTPUTS[2]"
-		},
-		"Add" : {
-			"ref_left" : "CONTROLS[ROLL]",
-			"ref_right:" : "offset",
-			"ref_out": "OUTPUTS[AILERON_LFT]"
-		}
+	"mixer" : {
+		"groups" : [
+			{	"name" : "CONTROLS",
+				"index" : 0,
+				"readOnly" : true,
+				"Entries" : ["ROLL", "PITCH", "YAW", "THROTTLE"]
+			},
+			{ 	"name" : "OUTPUTS",
+				"index" : 4,
+				"readOnly" : true,
+				"Entries" : ["ELEVATOR", "AILERON", "RUDDER", "THROTTLE"]
+			},
+			{ 	"name" : "PARAMS",
+				"index" : 5,
+				"readOnly" : true
+			},
+			{  	"name" : "VARS",
+				"index" : 6,
+				"readOnly" : false
+			}
+		],
+		"parameters" : [
+			{ "id" : "scale" , "value" : 0.8 },
+			{ "id" : "offset" , "value" : [0.05] },
+			{ "id" : "flap_3pt_in" , "value" : [-1.0, 0.0, 1.1] },
+			{ "id" : "flap_3pt_out" , "value" : [-0.5, 0.0, 1.0] }
+		],
+		"variables" : [
+			{ "id" : "flap_demand" , "value" : 0.0},
+			{ "id" : "pitch_demand" , "value" : [0.0]}
+		],
+		"mixers" : [
+			{  "type" : "Add",
+				"ref_left" : [0,0],
+				"ref_right:" : [0,1],
+				"ref_out": [4,0]
+			},
+			{  "type" : "Multiply",
+				"ref_left" : "CONTROLS[0]",
+				"ref_right": "CONTROLS[1]",
+				"ref_out": "OUTPUTS[1]"
+			},
+			{  "type" : "AddConst",
+				"ref_in" : "CONTROLS[1]",
+				"const": -0.5,
+				"ref_out": "OUTPUTS[2]"
+			},
+			{  "type" : "Add",
+				"ref_left" : "CONTROLS[ROLL]",
+				"ref_right:" : "offset",
+				"ref_out": "OUTPUTS[AILERON_LFT]"
+			}
+		]
 	}
-
 }

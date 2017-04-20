@@ -121,17 +121,39 @@ MixerJsonParser::parse_json(char *buff, int len)
 	int group_count = 0;
 	UNUSED(value_count);
 
-	// Count the groups
-	if (!json["Groups"].is_null()) {
-		auto &k = json["Groups"].object_items();
-		group_count = k.size();
+	if (!json["mixer"].is_object()) {
+		std::cout << "not a json mixer file" << std::endl;
+		return -1;
 	}
 
-	// Check if params are declared and parse them
-	if (!json["Groups"]["PARAMS"]["values"].is_null()) {
-		for (auto &k : json["Groups"]["PARAMS"]["values"].array_items()) {
+	// Count the groups
+	if (json["mixer"]["groups"].is_array()) {
+		auto &k = json["mixer"]["groups"].array_items();
+		group_count = k.size();
+
+	} else {
+		std::cout << "groups not an array" << std::endl;
+		return -1;
+	}
+
+	// Count the parameters
+	if (json["mixer"]["parameters"].is_array()) {
+		for (auto &k : json["mixer"]["parameters"].array_items()) {
 			std::cout << "    - " << k.dump() << "\n";
-			value_count += k[1].array_items().size();
+
+			if (k.is_object()) {
+				if (k["value"].is_number()) {
+					value_count++;
+
+				} else if (k["value"].is_array()) {
+					value_count += k["value"].array_items().size();
+				}
+
+			} else {
+				std::cout << "parameter item not an object" << std::endl;
+				return -1;
+			}
+
 			param_count++;
 		}
 
@@ -141,6 +163,10 @@ MixerJsonParser::parse_json(char *buff, int len)
 		params->parameter_count = param_count;
 		params->parameter_value_count = value_count;
 		_data_parser->parse_buffer(mixdata, sizeof(mixer_datablock_header_s) + blk_hdr->size);
+
+	} else {
+		std::cout << "parameters not an array" << std::endl;
+		return -1;
 	}
 
 	std::cout  <<  "group_count:" << group_count
