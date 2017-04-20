@@ -215,33 +215,58 @@ public:
 
 	bool set_null()
 	{
-		*out_ = picojson::value();
+//		*out_ = picojson::value();
+		std::cerr << "set null";
 		return true;
 	}
 	bool set_bool(bool b)
 	{
-		*out_ = picojson::value(b);
+		std::cerr << "set bool : ";
+
+		if (b) {
+			std::cerr << "true";
+
+		} else {
+			std::cerr << "false";
+		}
+
+		std::cerr << std::endl;
+//		*out_ = picojson::value(b);
 		return true;
 	}
 #ifdef PICOJSON_USE_INT64
 	bool set_int64(int64_t)
 	{
-		*out_ = picojson::value(i);
+		std::cerr << "set int64" << int64_t << endl;
+//		*out_ = picojson::value(i);
 		return true;
 	}
 #endif
 	bool set_number(double f)
 	{
-		*out_ = picojson::value(f);
+//		*out_ = picojson::value(f);
+		std::cerr << "set number : " << f << std::endl;
 		return true;
 	}
 	template <typename Iter> bool parse_string(picojson::input<Iter> &in)
 	{
-		*out_ = picojson::value(picojson::string_type, false);
-		return picojson::_parse_string(out_->get<std::string>(), in);
+		std::cerr << "parse string : ";
+//        *out_ = picojson::value(picojson::string_type, false);
+		picojson::value out = picojson::value(picojson::string_type, false);
+
+		if (picojson::_parse_string(out.get<std::string>(), in)) {
+			std::cerr << out << std::endl;
+
+		} else {
+			std::cerr << "string value invalid" << std::endl;
+			return false;
+		}
+
+		return true;
 	}
 	bool parse_array_start()
 	{
+		std::cerr << "array start" << std::endl;
 		*out_ = picojson::value(picojson::array_type, false);
 		return true;
 	}
@@ -252,18 +277,19 @@ public:
 
 	template <typename Iter> bool parse_array_item(picojson::input<Iter> &in, size_t)
 	{
-		picojson::value item;
-		// parse the array item
-		picojson::default_parse_context ctx(&item);
+		std::cerr << "array item" << std::endl;
+//		picojson::value item;
+//		// parse the array item
+//		picojson::default_parse_context ctx(&item);
 
-		if (!picojson::_parse(ctx, in)) {
+		if (!picojson::_parse(*this, in)) {
 			return false;
 		}
 
-		// assert that the array item is a hash
-		if (!item.is<picojson::object>()) {
-			return false;
-		}
+//		// assert that the array item is a hash
+//		if (!item.is<picojson::object>()) {
+//			return false;
+//		}
 
 		return true;
 	}
@@ -271,20 +297,22 @@ public:
 
 	bool parse_array_stop(size_t)
 	{
+		std::cerr << "array stop" << std::endl;
 		return true;
 	}
 	bool parse_object_start()
 	{
-		*out_ = picojson::value(picojson::object_type, false);
+		std::cerr << "object start" << std::endl;
+//		*out_ = picojson::value(picojson::object_type, false);
 		return true;
 	}
 	template <typename Iter> bool parse_object_item(picojson::input<Iter> &in, const std::string &key)
 	{
-		picojson::object &o = out_->get<picojson::object>();
-		picojson::default_parse_context ctx(&o[key]);
+//        //		picojson::object &o = out_->get<picojson::object>();
+//        picojson::value out = picojson::value(picojson::object_type, false);
 
-		std::cerr << "object key : " << key << std::endl;
-		return picojson::_parse(ctx, in);
+		std::cerr << "parse object item : " << key << std::endl;
+		return picojson::_parse(*this, in);
 	}
 
 private:
