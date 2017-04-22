@@ -118,18 +118,16 @@ MixerJsonParser::parse_json(char *buff, int len)
 
 	int param_count = 0;
 	int value_count = 0;
-	int group_count = 0;
-	UNUSED(value_count);
+	int group_count = 0;;
 
-	if (!json["mixer"].is_object()) {
-		std::cout << "not a json mixer file" << std::endl;
+	if (!json["mixer_config"].is_object()) {
+		std::cout << "not a json mixer configuration file" << std::endl;
 		return -1;
 	}
 
 	// Count the groups
-	if (json["mixer"]["groups"].is_array()) {
-		auto &k = json["mixer"]["groups"].array_items();
-		group_count = k.size();
+	if (json["mixer_config"]["groups"].is_array()) {
+		group_count = json["mixer_config"]["groups"].array_items().size();
 
 	} else {
 		std::cout << "groups not an array" << std::endl;
@@ -137,8 +135,8 @@ MixerJsonParser::parse_json(char *buff, int len)
 	}
 
 	// Count the parameters
-	if (json["mixer"]["parameters"].is_array()) {
-		for (auto &k : json["mixer"]["parameters"].array_items()) {
+	if (json["mixer_config"]["parameters"].is_array()) {
+		for (auto &k : json["mixer_config"]["parameters"].array_items()) {
 			std::cout << "    - " << k.dump() << "\n";
 
 			if (k.is_object()) {
@@ -186,12 +184,11 @@ class mixer_context : public  picojson::null_parse_context
 protected:
 	enum {
 		MIXCONTEXT_NULL = 0,
-		MIXCONTEXT_ROOT,
-		MIXCONTEXT_GROUPS = 100,
-		MIXCONTEXT_GROUP,
-		MIXCONTEXT_GROUP_ENTRIES,
-		MIXCONTEXT_GROUP_VALUES,
-		MIXCONTEXT_MIXERS = 200,
+		MIXCONTEXT_MIXER_CONFIG,
+		MIXCONTEXT_GROUPS,
+		MIXCONTEXT_PARAMETERS,
+		MIXCONTEXT_VARIABLES,
+		MIXCONTEXT_MIXERS,
 		MIXCONTEXT_MIXER,
 	};
 
@@ -199,11 +196,17 @@ protected:
 	picojson::value *out_;
 
 public:
+	picojson::value  parameters;
+	picojson::value  variables;
+	picojson::value  groups;
 
 	mixer_context(picojson::value *out)
 		:  picojson::null_parse_context()
 		, state_(MIXCONTEXT_NULL)
 		, out_(out)
+		, parameters()
+		, variables()
+		, groups()
 	{
 	}
 
@@ -215,7 +218,6 @@ public:
 
 	bool set_null()
 	{
-//		*out_ = picojson::value();
 		std::cerr << "set null";
 		return true;
 	}
@@ -231,27 +233,23 @@ public:
 		}
 
 		std::cerr << std::endl;
-//		*out_ = picojson::value(b);
 		return true;
 	}
 #ifdef PICOJSON_USE_INT64
 	bool set_int64(int64_t)
 	{
 		std::cerr << "set int64" << int64_t << endl;
-//		*out_ = picojson::value(i);
 		return true;
 	}
 #endif
 	bool set_number(double f)
 	{
-//		*out_ = picojson::value(f);
 		std::cerr << "set number : " << f << std::endl;
 		return true;
 	}
 	template <typename Iter> bool parse_string(picojson::input<Iter> &in)
 	{
 		std::cerr << "parse string : ";
-//        *out_ = picojson::value(picojson::string_type, false);
 		picojson::value out = picojson::value(picojson::string_type, false);
 
 		if (picojson::_parse_string(out.get<std::string>(), in)) {
@@ -267,33 +265,81 @@ public:
 	bool parse_array_start()
 	{
 		std::cerr << "array start" << std::endl;
-		*out_ = picojson::value(picojson::array_type, false);
+
+		switch (state_) {
+		case MIXCONTEXT_GROUPS: {
+				groups = picojson::value(picojson::array_type, false);
+				break;
+			}
+
+		case MIXCONTEXT_PARAMETERS: {
+				parameters = picojson::value(picojson::array_type, false);
+				break;
+			}
+
+		case MIXCONTEXT_VARIABLES: {
+				variables = picojson::value(picojson::array_type, false);
+				break;
+			}
+		}
+
 		return true;
 	}
-//    template <typename Iter> bool parse_array_item(input<Iter> &in, size_t)
-//    {
-//        return _parse(*this, in);
-//    }
 
 	template <typename Iter> bool parse_array_item(picojson::input<Iter> &in, size_t)
 	{
 		std::cerr << "array item" << std::endl;
-//		picojson::value item;
-//		// parse the array item
-//		picojson::default_parse_context ctx(&item);
+
+		switch (state_) {
+		case MIXCONTEXT_GROUPS: {
+				picojson::array &a = groups.get<picojson::array>();
+				a.push_back(picojson::value());
+				picojson::default_parse_context ctx(&a.back());
+
+				if (!picojson::_parse(ctx, in)) {
+					return false;
+				}
+
+				return true;
+				break;
+			}
+
+		case MIXCONTEXT_PARAMETERS: {
+				picojson::array &a = parameters.get<picojson::array>();
+				a.push_back(picojson::value());
+				picojson::default_parse_context ctx(&a.back());
+
+				if (!picojson::_parse(ctx, in)) {
+					return false;
+				}
+
+				return true;
+				break;
+			}
+
+		case MIXCONTEXT_VARIABLES: {
+				picojson::array &a = variables.get<picojson::array>();
+				a.push_back(picojson::value());
+				picojson::default_parse_context ctx(&a.back());
+
+				if (!picojson::_parse(ctx, in)) {
+					return false;
+				}
+
+				return true;
+				break;
+			}
+
+		default:
+			break;
+		}
 
 		if (!picojson::_parse(*this, in)) {
 			return false;
 		}
 
-//		// assert that the array item is a hash
-//		if (!item.is<picojson::object>()) {
-//			return false;
-//		}
-
 		return true;
 	}
-
 
 	bool parse_array_stop(size_t)
 	{
@@ -303,15 +349,28 @@ public:
 	bool parse_object_start()
 	{
 		std::cerr << "object start" << std::endl;
-//		*out_ = picojson::value(picojson::object_type, false);
 		return true;
 	}
 	template <typename Iter> bool parse_object_item(picojson::input<Iter> &in, const std::string &key)
 	{
-//        //		picojson::object &o = out_->get<picojson::object>();
-//        picojson::value out = picojson::value(picojson::object_type, false);
-
 		std::cerr << "parse object item : " << key << std::endl;
+
+		if (key == "mixer_config") {
+			state_ = MIXCONTEXT_MIXER_CONFIG;
+
+		} else if (key == "groups") {
+			state_ = MIXCONTEXT_GROUPS;
+
+		} else if (key == "parameters") {
+			state_ = MIXCONTEXT_PARAMETERS;
+
+		} else if (key == "variables") {
+			state_ = MIXCONTEXT_VARIABLES;
+
+		} else if (key == "mixers") {
+			state_ = MIXCONTEXT_MIXERS;
+		}
+
 		return picojson::_parse(*this, in);
 	}
 
@@ -324,10 +383,13 @@ private:
 int
 MixerJsonParser::parse_picojson(std::istream *is)
 {
-	std::string err;
 	picojson::value out;
-	mixer_context ctx(&out);
+	std::string err;
 
+//    picojson::default_parse_context ctx(&out);
+//    picojson::_parse(ctx, std::istreambuf_iterator<char>(*is), std::istreambuf_iterator<char>(), &err);
+
+	mixer_context ctx(&out);
 	picojson::_parse(ctx, std::istreambuf_iterator<char>(*is), std::istreambuf_iterator<char>(), &err);
 
 	std::cerr << picojson::get_last_error() << std::endl;
@@ -336,6 +398,103 @@ MixerJsonParser::parse_picojson(std::istream *is)
 		std::cerr << err << std::endl;
 		return -1;
 	}
+
+	std::cerr << "---- groups ----" << std::endl;
+	std::cerr << ctx.groups.serialize(true) << std::endl;
+
+	if (!ctx.groups.is<picojson::array>()) {
+		std::cerr << "picojson - error - group is not an array" << std::endl;
+		return -1;
+	}
+
+	for (picojson::value const &group : ctx.groups.get<picojson::array>()) {
+		if (!group.contains("name")) {
+			std::cerr << "group does not contain name" << std::endl;
+			return -1;
+		}
+
+		picojson::value nameval = group.get("name");
+
+		if (!nameval.is<std::string>()) {
+			std::cerr << "group name is not a string " << std::endl;
+			return -1;
+		}
+
+		string str = nameval.get<std::string>();
+		std::cerr << "group name is " << str << std::endl;
+
+		if (!group.contains("index")) {
+			std::cerr << "group does not contain index" << std::endl;
+			return -1;
+		}
+
+		picojson::value indexval = group.get("index");
+
+		if (!indexval.is<double>()) {
+			std::cerr << "group index is not a value " << std::endl;
+			return -1;
+		}
+
+		double index = indexval.get<double>();
+		std::cerr << "group index is : " << index << std::endl;
+	}
+
+	std::cerr << std::endl << "---- parameters ----" << std::endl;
+	std::cerr << ctx.parameters.serialize(true) << std::endl;
+
+	if (!ctx.parameters.is<picojson::array>()) {
+		std::cerr << "picojson - error - group is not an array" << std::endl;
+		return -1;
+	}
+
+	int param_count = 0;
+	int value_count = 0;
+
+	for (picojson::value const &param : ctx.parameters.get<picojson::array>()) {
+		//Param ID
+		if (!param.contains("id")) {
+			std::cerr << "param does not contain id" << std::endl;
+			return -1;
+		}
+
+		picojson::value idval = param.get("id");
+
+		if (!idval.is<std::string>()) {
+			std::cerr << "param id value is not a string" << std::endl;
+			return -1;
+		}
+
+		std::cerr << "param id is " << idval.get<std::string>() << std::endl;
+
+		//Param value
+		if (!param.contains("value")) {
+			std::cerr << "param does not contain value" << std::endl;
+			return -1;
+		}
+
+		picojson::value paramval = param.get("value");
+
+		if (paramval.is<double>()) {
+			double value =  paramval.get<double>();
+			std::cerr << "param value is double :" << value << std::endl;
+			value_count++;
+
+		} else if (paramval.is<picojson::array>()) {
+			auto valarray = paramval.get<picojson::array>();
+			value_count += valarray.size();
+			std::cerr << "param value is array" << std::endl;
+
+		} else {
+			std::cerr << "param value is invalid type" << std::endl;
+		}
+
+		param_count++;
+	}
+
+	std::cerr << "param_count:" << param_count << "  value_count:" << value_count << std::endl;
+
+	std::cerr << std::endl << "---- variables ----" << std::endl;
+	std::cerr << ctx.variables.serialize(true) << std::endl;
 
 	return 0;
 }

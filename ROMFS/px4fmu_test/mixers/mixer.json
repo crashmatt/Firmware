@@ -1,5 +1,5 @@
 {
-	"mixer" : {
+	"mixer_config" : {
 		"groups" : [
 			{	"name" : "CONTROLS",
 				"index" : 0,
