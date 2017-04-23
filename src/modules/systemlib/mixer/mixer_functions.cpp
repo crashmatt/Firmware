@@ -52,27 +52,28 @@
 /****************************************************************************/
 
 MixerMultipoint::MixerMultipoint(mixer_data_multipoint_s *mixdata)
-	: Mixer((mixer_base_header_s *) mixdata)
+	: Mixer()
+	, _count(mixdata->count)
+	, _in(mixdata->ref_in)
+	, _in_vals(mixdata->in_vals)
+	, _out_vals(mixdata->out_vals)
+	, _out(mixdata->ref_out)
 {
 }
 
 uint16_t
-MixerMultipoint::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
+MixerMultipoint::mix(MixerRegisterGroups *reg_groups)
 {
-	mixer_data_multipoint_s *multdata = (mixer_data_multipoint_s *) _mixdata;
-
-	float input = *reg_groups->getFloatValue(multdata->ref_in);
-
-	float *invals = reg_groups->getFloatValue(multdata->in_vals);
-	float *outvals = reg_groups->getFloatValue(multdata->out_vals);
-
-	float *output = reg_groups->getFloatValue(multdata->ref_out);
+	float input = *reg_groups->getFloatValue(_in);
+	float *invals = reg_groups->getFloatValue(_in_vals);
+	float *outvals = reg_groups->getFloatValue(_out_vals);
+	float *output = reg_groups->getFloatValue(_out);
 
 	if (input <= invals[0]) {
 		*output = outvals[0];
 	}
 
-	for (int i = 0; i < (multdata->count - 1); i++) {
+	for (int i = 0; i < (_count - 1); i++) {
 		if ((input >= invals[i]) && (input <= invals[i + 1])) {
 			float inrange = invals[i + 1] - invals[i];
 
@@ -88,41 +89,35 @@ MixerMultipoint::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e typ
 		}
 	}
 
-	*output = outvals[multdata->count - 1];
+	*output = outvals[_count - 1];
 	return 0;
 }
 
 bool
 MixerMultipoint::mixerValid(MixerRegisterGroups *reg_groups)
 {
-	if (_mixdata == false) {
-		return false;
-	}
-
-	mixer_data_multipoint_s *multdata = (mixer_data_multipoint_s *) _mixdata;
-
 	//Check input and output references
-	if (!reg_groups->validRegister(&multdata->ref_in, true)) {
+	if (!reg_groups->validRegister(&_in, true)) {
 		return false;
 	}
 
-	if (!reg_groups->validRegister(&multdata->ref_out, true)) {
+	if (!reg_groups->validRegister(&_out, true)) {
 		return false;
 	}
 
 	//Check start and end of input registers. Pressume inbetween is ok.
-	if (!reg_groups->validRegister(&multdata->in_vals, true)) {
+	if (!reg_groups->validRegister(&_in_vals, true)) {
 		return false;
 	}
 
-	if (!reg_groups->validRegister(&multdata->out_vals, true)) {
+	if (!reg_groups->validRegister(&_out_vals, true)) {
 		return false;
 	}
 
-	mixer_register_ref_s ipref = multdata->in_vals;
-	mixer_register_ref_s opref = multdata->out_vals;
-	ipref.index += multdata->count;
-	opref.index += multdata->count;
+	mixer_register_ref_s ipref = _in_vals;
+	mixer_register_ref_s opref = _out_vals;
+	ipref.index += _count;
+	opref.index += _count;
 
 	if (!reg_groups->validRegister(&ipref, true)) {
 		return false;

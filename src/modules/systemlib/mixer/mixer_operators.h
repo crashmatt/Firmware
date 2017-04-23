@@ -96,13 +96,20 @@
 /**
  * Mixer for doing add operations
  */
-class __EXPORT MixerAdd : public MixerOperator
+class __EXPORT MixerAdd : public Mixer
 {
 public:
+	MixerAdd(mixer_register_ref_s left, mixer_register_ref_s right, mixer_register_ref_s out);
 	MixerAdd(mixer_data_operator_s *mixdata);
 
-	uint16_t		mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type = MIXER_REGISTER_TYPE_NONE);
+	uint16_t		mix(MixerRegisterGroups *reg_groups);
+	uint16_t        getMixerData(uint8_t *buff, int len);
+	bool            mixerValid(MixerRegisterGroups *reg_groups);
 protected:
+	mixer_register_ref_s _left;
+	mixer_register_ref_s _right;
+	mixer_register_ref_s _out;
+
 private:
 };
 
@@ -112,13 +119,19 @@ private:
 /**
  * Mixer for add constant to reference value
  */
-class __EXPORT MixerAddConst : public MixerConstOperator
+class __EXPORT MixerAddConst : public Mixer
 {
 public:
-	MixerAddConst(mixer_data_const_operator_s *mixdata);
+	MixerAddConst(mixer_data_operator_s *mixdata);
+	MixerAddConst(mixer_register_ref_s in, mixer_register_val_u constval, mixer_register_ref_s out);
 
-	uint16_t		mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type = MIXER_REGISTER_TYPE_NONE);
+	uint16_t		mix(MixerRegisterGroups *reg_groups);
+	uint16_t        getMixerData(uint8_t *buff, int len);
+	bool            mixerValid(MixerRegisterGroups *reg_groups);
 protected:
+	mixer_register_ref_s _in;
+	mixer_register_val_u _constval;
+	mixer_register_ref_s _out;
 private:
 };
 
@@ -128,13 +141,18 @@ private:
 /**
  * Mixer for copy values
  */
-class __EXPORT MixerCopy : public MixerOperator
+class __EXPORT MixerCopy : public Mixer
 {
 public:
+	MixerCopy(mixer_register_ref_s in, mixer_register_ref_s out);
 	MixerCopy(mixer_data_operator_s *mixdata);
 
-	uint16_t		mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type = MIXER_REGISTER_TYPE_NONE);
+	uint16_t		mix(MixerRegisterGroups *reg_groups);
+	uint16_t        getMixerData(uint8_t *buff, int len);
+	bool            mixerValid(MixerRegisterGroups *reg_groups);
 protected:
+	mixer_register_ref_s _in;
+	mixer_register_ref_s _out;
 private:
 };
 
@@ -144,13 +162,19 @@ private:
 /**
  * Mixer for copy values
  */
-class __EXPORT MixerMultiply : public MixerOperator
+class __EXPORT MixerMultiply : public Mixer
 {
 public:
+	MixerMultiply(mixer_register_ref_s left, mixer_register_ref_s right, mixer_register_ref_s out);
 	MixerMultiply(mixer_data_operator_s *mixdata);
 
-	uint16_t		mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type = MIXER_REGISTER_TYPE_NONE);
+	uint16_t		mix(MixerRegisterGroups *reg_groups);
+	uint16_t        getMixerData(uint8_t *buff, int len);
+	bool            mixerValid(MixerRegisterGroups *reg_groups);
 protected:
+	mixer_register_ref_s _left;
+	mixer_register_ref_s _right;
+	mixer_register_ref_s _out;
 private:
 };
 

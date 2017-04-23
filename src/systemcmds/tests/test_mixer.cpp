@@ -291,16 +291,16 @@ bool MixerTest::mixerGroupFromDataTest()
 
 	//ADD CONSTANT
 	memset(mixbuff, 0, MIXER_BUFFER_SIZE);
-	mixer_data_const_operator_s *oppcdata = (mixer_data_const_operator_s *) buffpos;
+	mixer_data_operator_s *oppcdata = (mixer_data_operator_s *) buffpos;
 	oppcdata->header.mixer_type = MIXER_TYPES_ADD_CONST;
-	oppcdata->header.data_size = sizeof(mixer_data_const_operator_s);
+	oppcdata->header.data_size = sizeof(mixer_data_operator_s);
 	oppcdata->constval.floatval = 0.75;
-	oppcdata->ref_in.group = MixerRegisterGroups::REGS_CONTROL_0;
-	oppcdata->ref_in.index = 0;
+	oppcdata->ref_right.group = MixerRegisterGroups::REGS_CONTROL_0;
+	oppcdata->ref_right.index = 0;
 	oppcdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppcdata->ref_out.index = 3;
 
-	if (mixer_group.from_buffer(mixbuff, sizeof(mixer_data_const_operator_s)) == -1) {
+	if (mixer_group.from_buffer(mixbuff, sizeof(mixer_data_operator_s)) == -1) {
 		return false;
 	}
 
@@ -362,11 +362,11 @@ bool MixerTest::mixerParserTest()
 			(mixer_register_val_u *) outputs.output, false);
 
 	debug("size of Mixer:%u", sizeof(Mixer));
-	debug("size of MixerOperator:%u", sizeof(MixerOperator));
 	debug("size of MixerAdd:%u", sizeof(MixerAdd));
+	debug("size of MixerAddConst:%u", sizeof(MixerAddConst));
 	debug("size of mixer_register_val_u:%u", sizeof(mixer_register_val_u));
 	debug("size of mixer_register_ref_s:%u", sizeof(mixer_register_ref_s));
-	debug("size of mixer_data_operator_s:%u", sizeof(mixer_data_operator_s));
+//	debug("size of mixer_data_operator_s:%u", sizeof(MixerMultiPo));
 
 	uint8_t *mixbuff = (uint8_t *) malloc(256);
 

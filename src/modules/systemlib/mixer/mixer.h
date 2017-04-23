@@ -92,7 +92,7 @@
 /****************************************************************************/
 
 /**
- * Abstract class defining the basic mixer oeprations
+ * Abstract class defining basic mixer operations
  */
 class __EXPORT Mixer
 {
@@ -103,25 +103,25 @@ public:
 	/**
 	* Constructor.
 	 *
-	 * @param control_cb		Callback invoked when reading controls.
 	 */
-	Mixer(mixer_base_header_s *mixdata);
+	Mixer();
 	virtual ~Mixer() {;}
-
 
 	/**
 	 * Perform the mixing function.
 	 *
 	 * @return			Saturation status
 	 */
-	virtual uint16_t		mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type = MIXER_REGISTER_TYPE_NONE) = 0;
+	virtual uint16_t	mix(MixerRegisterGroups *reg_groups) = 0;
 
 	/**
-	 * Get the base type of the mixer to perform appropriate operations on data structures
+	 * Fills a buffer with a data structure desribing the mixer.
 	 *
-	 * @return			Mixer base type
+	 * @param buff      Reference to the buffer to use
+	 * @param len       Length of buffer available
+	 * @return			Data size written to buffer. 0 on error.
 	 */
-	virtual uint16_t    getBaseType()  {return MIXER_BASE_TYPE_NONE;}
+	virtual uint16_t    getMixerData(uint8_t *buff, int len)  = 0;
 
 	/**
 	 * Check the mixer is using valid data in the registers
@@ -130,41 +130,7 @@ public:
 	 */
 	virtual bool        mixerValid(MixerRegisterGroups *reg_groups)  = 0;
 
-	/**
-	 * Get the mixer type from the mixer data
-	 *
-	 * @return			Mixer type
-	 */
-	uint16_t getMixerType() {if (_mixdata != nullptr) return _mixdata->mixer_type; else return MIXER_TYPES_NONE;}
-
-	/**
-	 * Get the mixer data size
-	 *
-	 * @return			Mixer data size
-	 */
-	virtual uint16_t getDataSize() {if (_mixdata != nullptr) return _mixdata->data_size; else return 0;}
-
-	/**
-	 * Get the mixer data
-	 *
-	 * @return			Mixer data reference
-	 */
-	mixer_base_header_s *getMixerData() {return _mixdata;}
-
-	typedef enum {
-		MIXER_BASE_TYPE_NONE            = 0,
-		MIXER_BASE_TYPE_OPERATOR        = 1,
-		MIXER_BASE_TYPE_CONST_OPERATOR  = 2,
-		MIXER_BASE_TYPE_FUNCTION        = 3,
-		MIXER_BASE_TYPE_OBJECT          = 4,
-	} MIXER_BASE_TYPE;
-
 protected:
-	/**
-	 * Pointer to data structure for the mixer
-	 */
-	mixer_base_header_s             *_mixdata;
-
 private:
 	/* do not allow to copy due to pointer data members */
 	Mixer(const Mixer &);
@@ -172,110 +138,56 @@ private:
 };
 
 
-/****************************************************************************/
-
-/**
- * Abstract class defining mixers that are operators
- */
-class __EXPORT MixerOperator : public Mixer
-{
-public:
-	MixerOperator(mixer_data_operator_s *mixdata);
-	~MixerOperator();
-
-	uint16_t getBaseType()  {return MIXER_BASE_TYPE_OPERATOR;}
-	bool mixerValid(MixerRegisterGroups *reg_groups);
-protected:
-private:
-};
-
-/****************************************************************************/
-
-/**
- * Abstract class defining mixers that are operators
- */
-class __EXPORT MixerConstOperator : public Mixer
-{
-public:
-	MixerConstOperator(mixer_data_const_operator_s *mixdata);
-	~MixerConstOperator();
-
-	uint16_t getBaseType()  {return MIXER_BASE_TYPE_CONST_OPERATOR;}
-	bool mixerValid(MixerRegisterGroups *reg_groups);
-protected:
-private:
-};
-
-
-/////****************************************************************************/
+///****************************************************************************/
 
 ///**
-// * Abstract class defining the basic mixers for functions
+// * Class for Mixer Objects, mixers with internal state, initialization or owning its own parameters
+// *  Example is a complete mixer for a multirotor initialized with the multirotor geometry
 // */
-//class __EXPORT MixerFunction : public Mixer
+//class __EXPORT MixerObject : public Mixer
 //{
 //public:
-//	MixerFunction(mixer_data_function_s *mixdata);
-//	~MixerFunction();
+//	MixerObject(mixer_data_object_s *mixdata);
+//	virtual ~MixerObject() {;}
 
-//	uint16_t getBaseType()  {return MIXER_BASE_TYPE_FUNCTION;}
-//protected:
-//private:
+//	virtual bool mixerValid(MixerRegisterGroups *reg_groups) {return false;}
+
+//#if !defined(MIXER_REMOTE)
+//	/**
+//	* gets a mixer parameter and metadata
+//	 *
+//	* @param param         Contains parameter address.  Data returned in structure.
+//	* @return              Count of parameters read.  -1 if error
+//	 */
+//	virtual int16_t        get_parameter(mixer_param_s *param) {return -1;}
+
+//	/**
+//	 * sets mixer parameter array values
+//	 *
+//	* @param param         Message including all information required to set values
+//	* @return              Count of parameters written.  <0 if error
+//	 */
+//	virtual int16_t         set_parameter(mixer_param_s *param) {return -1;}
+//#endif  //MIXER_REMOTE
+
+//	/**
+//	* Get a count of parameters for this mixer
+//	 *
+//	* @return              A count of parameters for the mixer
+//	 */
+//	virtual int16_t         parameter_count() {return 0;}
+
+//	/**
+//	 * sets an array value in a mixer parameter
+//	 * Separated from set_parameter to support remote mixers with limited communication
+//	 *
+//	* @param paramIndex    The mixer index for the parameter
+//	* @param arrayIndex    Index of the array value to set
+//	* @param value         The value to set
+//	* @return              negative on error
+//	 */
+//	virtual int16_t        set_param_value(int16_t paramIndex, int16_t arrayIndex, float value) {return -1;}
 //};
-
-
-
-/****************************************************************************/
-
-/**
- * Class for Mixer Objects, mixers with internal state, initialization or owning its own parameters
- *  Example is a complete mixer for a multirotor initialized with the multirotor geometry
- */
-class __EXPORT MixerObject : public Mixer
-{
-public:
-	MixerObject(mixer_data_object_s *mixdata);
-	virtual ~MixerObject() {;}
-
-	uint16_t getBaseType()  {return MIXER_BASE_TYPE_OBJECT;}
-	virtual bool mixerValid(MixerRegisterGroups *reg_groups) {return false;}
-
-#if !defined(MIXER_REMOTE)
-	/**
-	* gets a mixer parameter and metadata
-	 *
-	* @param param         Contains parameter address.  Data returned in structure.
-	* @return              Count of parameters read.  -1 if error
-	 */
-	virtual int16_t        get_parameter(mixer_param_s *param) {return -1;}
-
-	/**
-	 * sets mixer parameter array values
-	 *
-	* @param param         Message including all information required to set values
-	* @return              Count of parameters written.  <0 if error
-	 */
-	virtual int16_t         set_parameter(mixer_param_s *param) {return -1;}
-#endif  //MIXER_REMOTE
-
-	/**
-	* Get a count of parameters for this mixer
-	 *
-	* @return              A count of parameters for the mixer
-	 */
-	virtual int16_t         parameter_count() {return 0;}
-
-	/**
-	 * sets an array value in a mixer parameter
-	 * Separated from set_parameter to support remote mixers with limited communication
-	 *
-	* @param paramIndex    The mixer index for the parameter
-	* @param arrayIndex    Index of the array value to set
-	* @param value         The value to set
-	* @return              negative on error
-	 */
-	virtual int16_t        set_param_value(int16_t paramIndex, int16_t arrayIndex, float value) {return -1;}
-};
 
 
 /****************************************************************************/

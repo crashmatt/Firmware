@@ -52,11 +52,17 @@ class __EXPORT MixerMultipoint : public Mixer
 {
 public:
 	MixerMultipoint(mixer_data_multipoint_s *mixdata);
+//    MixerMultipoint(mixer_register_ref_s in, mixer_register_ref_s out, mixer_register_ref_s inpts, mixer_register_ref_s outpts, int pts);
 
-	uint16_t		mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type = MIXER_REGISTER_TYPE_NONE);
+	uint16_t		mix(MixerRegisterGroups *reg_groups);
 	bool            mixerValid(MixerRegisterGroups *reg_groups);
-	uint16_t        getDataSize() {return sizeof(mixer_data_multipoint_s);}
+	uint16_t        getMixerType() {return MIXER_TYPES_MULTIPLY;}
 protected:
+	uint32_t                _count;
+	mixer_register_ref_s    _in;
+	mixer_register_ref_s    _in_vals;
+	mixer_register_ref_s    _out_vals;
+	mixer_register_ref_s    _out;
 private:
 };
 

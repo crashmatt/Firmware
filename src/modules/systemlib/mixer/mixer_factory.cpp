@@ -57,20 +57,16 @@ Mixer *MixerFactory::factory(mixer_base_header_s *mixdata)
 				return nullptr;
 			}
 
-			mixer_data_operator_s *opdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
-			memcpy(opdata, mixdata, sizeof(mixer_data_operator_s));
-			return new MixerAdd((mixer_data_operator_s *) opdata);
+			return new MixerAdd((mixer_data_operator_s *) mixdata);
 			break;
 		}
 
 	case MIXER_TYPES_ADD_CONST : {
-			if (mixdata->data_size != sizeof(mixer_data_const_operator_s)) {
+			if (mixdata->data_size != sizeof(mixer_data_operator_s)) {
 				return nullptr;
 			}
 
-			mixer_data_const_operator_s *opdata = (mixer_data_const_operator_s *) malloc(sizeof(mixer_data_const_operator_s));
-			memcpy(opdata, mixdata, sizeof(mixer_data_const_operator_s));
-			return new MixerAddConst((mixer_data_const_operator_s *) opdata);
+			return new MixerAddConst((mixer_data_operator_s *) mixdata);
 			break;
 		}
 
@@ -79,9 +75,7 @@ Mixer *MixerFactory::factory(mixer_base_header_s *mixdata)
 				return nullptr;
 			}
 
-			mixer_data_operator_s *opdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
-			memcpy(opdata, mixdata, sizeof(mixer_data_operator_s));
-			return new MixerCopy((mixer_data_operator_s *) opdata);
+			return new MixerCopy((mixer_data_operator_s *) mixdata);
 			break;
 		}
 
@@ -90,9 +84,7 @@ Mixer *MixerFactory::factory(mixer_base_header_s *mixdata)
 				return nullptr;
 			}
 
-			mixer_data_operator_s *opdata = (mixer_data_operator_s *) malloc(sizeof(mixer_data_operator_s));
-			memcpy(opdata, mixdata, sizeof(mixer_data_operator_s));
-			return new MixerMultiply((mixer_data_operator_s *) opdata);
+			return new MixerMultiply((mixer_data_operator_s *) mixdata);
 			break;
 		}
 

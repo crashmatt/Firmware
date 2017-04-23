@@ -51,78 +51,254 @@
 
 /****************************************************************************/
 
+MixerAdd::MixerAdd(mixer_register_ref_s left, mixer_register_ref_s right, mixer_register_ref_s out)
+	: Mixer()
+	, _left(left)
+	, _right(right)
+	, _out(out)
+{
+
+}
+
+
 MixerAdd::MixerAdd(mixer_data_operator_s *mixdata)
-	: MixerOperator(mixdata)
+	: Mixer()
+	, _left(mixdata->ref_left)
+	, _right(mixdata->ref_right)
+	, _out(mixdata->ref_out)
 {
 }
 
 uint16_t
-MixerAdd::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
+MixerAdd::mix(MixerRegisterGroups *reg_groups)
 {
-	mixer_data_operator_s *mixdata = (mixer_data_operator_s *) _mixdata;
-	float *dest = reg_groups->getFloatValue(mixdata->ref_out);
-	float *left = reg_groups->getFloatValue(mixdata->ref_left);
-	float *right = reg_groups->getFloatValue(mixdata->ref_right);
+	float *dest = reg_groups->getFloatValue(_out);
+	float *left = reg_groups->getFloatValue(_left);
+	float *right = reg_groups->getFloatValue(_right);
 
 	*dest = *left + *right;
 	return 0;
 }
 
+bool
+MixerAdd::mixerValid(MixerRegisterGroups *reg_groups)
+{
+	//Check input and output references
+	if (!reg_groups->validRegister(&_left, true)) {
+		return false;
+	}
+
+	if (!reg_groups->validRegister(&_right, true)) {
+		return false;
+	}
+
+	if (!reg_groups->validRegister(&_out, true)) {
+		return false;
+	}
+
+	return true;
+}
+
+uint16_t
+MixerAdd::getMixerData(uint8_t *buff, int len)
+{
+	if (len < sizeof(mixer_data_operator_s)) {
+		return -1;
+	}
+
+	mixer_data_operator_s *data = (mixer_data_operator_s *) buff;
+
+	data->header.mixer_type = MIXER_TYPES_ADD;
+	data->header.data_size = sizeof(mixer_data_operator_s);
+	data->ref_left = _left;
+	data->ref_right = _right;
+	data->ref_out = _out;
+	return sizeof(mixer_data_operator_s);
+}
+
 
 /****************************************************************************/
 
-MixerAddConst::MixerAddConst(mixer_data_const_operator_s *mixdata)
-	: MixerConstOperator(mixdata)
+MixerAddConst::MixerAddConst(mixer_register_ref_s in, mixer_register_val_u constval, mixer_register_ref_s out)
+	: Mixer()
+	, _in(in)
+	, _constval(constval)
+	, _out(out)
+{
+}
+
+MixerAddConst::MixerAddConst(mixer_data_operator_s *mixdata)
+	: Mixer()
+	, _in(mixdata->ref_right)
+	, _constval(mixdata->constval)
+	, _out(mixdata->ref_out)
 {
 }
 
 uint16_t
-MixerAddConst::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
+MixerAddConst::mix(MixerRegisterGroups *reg_groups)
 {
-	mixer_data_const_operator_s *mixdata = (mixer_data_const_operator_s *) _mixdata;
-	float *dest = reg_groups->getFloatValue(mixdata->ref_out);
-	float *value = reg_groups->getFloatValue(mixdata->ref_in);
+	float *dest = reg_groups->getFloatValue(_out);
+	float *value = reg_groups->getFloatValue(_in);
 
-	*dest = *value + mixdata->constval.floatval;
+	*dest = *value + _constval.floatval;
 	return 0;
+}
+
+uint16_t
+MixerAddConst::getMixerData(uint8_t *buff, int len)
+{
+	if (len < sizeof(mixer_data_operator_s)) {
+		return -1;
+	}
+
+	mixer_data_operator_s *data = (mixer_data_operator_s *) buff;
+
+	data->header.mixer_type = MIXER_TYPES_ADD_CONST;
+	data->header.data_size = sizeof(mixer_data_operator_s);
+	data->ref_right = _in;
+	data->constval = _constval;
+	data->ref_out = _out;
+	return sizeof(mixer_data_operator_s);
+}
+
+bool
+MixerAddConst::mixerValid(MixerRegisterGroups *reg_groups)
+{
+	//Check input and output references
+	if (!reg_groups->validRegister(&_in, true)) {
+		return false;
+	}
+
+	if (!reg_groups->validRegister(&_out, true)) {
+		return false;
+	}
+
+	return true;
 }
 
 
 /****************************************************************************/
+
+MixerCopy::MixerCopy(mixer_register_ref_s in, mixer_register_ref_s out)
+	: Mixer()
+	, _in(in)
+	, _out(out)
+{
+}
 
 MixerCopy::MixerCopy(mixer_data_operator_s *mixdata)
-	: MixerOperator(mixdata)
+	: Mixer()
+	, _in(mixdata->ref_right)
+	, _out(mixdata->ref_out)
 {
 }
 
 uint16_t
-MixerCopy::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
+MixerCopy::mix(MixerRegisterGroups *reg_groups)
 {
-	mixer_data_operator_s *mixdata = (mixer_data_operator_s *) _mixdata;
-	float *dest = reg_groups->getFloatValue(mixdata->ref_out);
-	float *right = reg_groups->getFloatValue(mixdata->ref_right);
+	float *dest = reg_groups->getFloatValue(_out);
+	float *source = reg_groups->getFloatValue(_in);
 
-	*dest = *right;
+	*dest = *source;
 	return 0;
 	return 0;
 }
 
+
+uint16_t
+MixerCopy::getMixerData(uint8_t *buff, int len)
+{
+	if (len < sizeof(mixer_data_operator_s)) {
+		return -1;
+	}
+
+	mixer_data_operator_s *data = (mixer_data_operator_s *) buff;
+
+	data->header.mixer_type = MIXER_TYPES_COPY;
+	data->header.data_size = sizeof(mixer_data_operator_s);
+	data->ref_right = _in;
+	data->ref_out = _out;
+	return sizeof(mixer_data_operator_s);
+}
+
+bool
+MixerCopy::mixerValid(MixerRegisterGroups *reg_groups)
+{
+	//Check input and output references
+	if (!reg_groups->validRegister(&_in, true)) {
+		return false;
+	}
+
+	if (!reg_groups->validRegister(&_out, true)) {
+		return false;
+	}
+
+	return true;
+}
 
 /****************************************************************************/
 
+MixerMultiply::MixerMultiply(mixer_register_ref_s left, mixer_register_ref_s right, mixer_register_ref_s out)
+	: Mixer()
+	, _left(left)
+	, _right(right)
+	, _out(out)
+{
+
+}
+
 MixerMultiply::MixerMultiply(mixer_data_operator_s *mixdata)
-	: MixerOperator(mixdata)
+	: Mixer()
+	, _left(mixdata->ref_left)
+	, _right(mixdata->ref_right)
+	, _out(mixdata->ref_out)
 {
 }
 
 uint16_t
-MixerMultiply::mix(MixerRegisterGroups *reg_groups, mixer_register_types_e type)
+MixerMultiply::mix(MixerRegisterGroups *reg_groups)
 {
-	mixer_data_operator_s *mixdata = (mixer_data_operator_s *) _mixdata;
-	float *dest = reg_groups->getFloatValue(mixdata->ref_out);
-	float *left = reg_groups->getFloatValue(mixdata->ref_left);
-	float *right = reg_groups->getFloatValue(mixdata->ref_right);
+	float *dest = reg_groups->getFloatValue(_out);
+	float *left = reg_groups->getFloatValue(_left);
+	float *right = reg_groups->getFloatValue(_right);
 
 	*dest = *left * *right;
 	return 0;
+}
+
+uint16_t
+MixerMultiply::getMixerData(uint8_t *buff, int len)
+{
+	if (len < sizeof(mixer_data_operator_s)) {
+		return -1;
+	}
+
+	mixer_data_operator_s *data = (mixer_data_operator_s *) buff;
+
+	data->header.mixer_type = MIXER_TYPES_MULTIPLY;
+	data->header.data_size = sizeof(mixer_data_operator_s);
+	data->ref_left = _left;
+	data->ref_right = _right;
+	data->ref_out = _out;
+	return sizeof(mixer_data_operator_s);
+}
+
+bool
+MixerMultiply::mixerValid(MixerRegisterGroups *reg_groups)
+{
+	//Check input and output references
+	if (!reg_groups->validRegister(&_left, true)) {
+		return false;
+	}
+
+	if (!reg_groups->validRegister(&_right, true)) {
+		return false;
+	}
+
+	if (!reg_groups->validRegister(&_out, true)) {
+		return false;
+	}
+
+	return true;
 }

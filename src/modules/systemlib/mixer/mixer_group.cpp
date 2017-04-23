@@ -102,26 +102,27 @@ MixerGroup::from_buffer(uint8_t *mixbuff, int bufflen)
 int
 MixerGroup::to_buffer(uint8_t *mixbuff, int bufflen)
 {
-	int data_size;
-	int buffpos = 0;
-	Mixer *mix = _first;
-	mixer_base_header_s *mixheader;
+//	int data_size;
+//	int buffpos = 0;
+//	Mixer *mix = _first;
+//	mixer_base_header_s *mixheader;
 
-	while (mix != nullptr) {
-		mixheader = mix->getMixerData();
-		data_size = mixheader->data_size;
+//	while (mix != nullptr) {
+//		mixheader = mix->getMixerData();
+//		data_size = mixheader->data_size;
 
-		//Check for buffer overflow
-		if ((buffpos + data_size) >= bufflen) {
-			return -1;
-		}
+//		//Check for buffer overflow
+//		if ((buffpos + data_size) >= bufflen) {
+//			return -1;
+//		}
 
-		memcpy(&mixbuff[buffpos], mixheader, data_size);
-		buffpos += data_size;
-		mix = mix->_next;
-	}
+//		memcpy(&mixbuff[buffpos], mixheader, data_size);
+//		buffpos += data_size;
+//		mix = mix->_next;
+//	}
 
-	return buffpos;
+//	return buffpos;
+	return -1;
 }
 
 
@@ -211,17 +212,17 @@ MixerGroup::count()
 int16_t
 MixerGroup::group_param_count()
 {
-	Mixer	*mixer = _first;
+//	Mixer	*mixer = _first;
 	int16_t param_count = 0;
 
-	while ((mixer != nullptr)) {
-		if (mixer->getBaseType() == Mixer::MIXER_BASE_TYPE_OBJECT) {
-			MixerObject *mixobj = (MixerObject *) mixer;
-			param_count += mixobj->parameter_count();
-		}
+//	while ((mixer != nullptr)) {
+//		if (mixer->getBaseType() == Mixer::MIXER_BASE_TYPE_OBJECT) {
+//			MixerObject *mixobj = (MixerObject *) mixer;
+//			param_count += mixobj->parameter_count();
+//		}
 
-		mixer = mixer->_next;
-	}
+//		mixer = mixer->_next;
+//	}
 
 	return param_count;
 }
