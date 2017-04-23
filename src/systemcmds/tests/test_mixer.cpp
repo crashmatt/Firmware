@@ -61,6 +61,7 @@
 #include <systemlib/mixer/mixers.h>
 #include <systemlib/mixer/mixer_data_parser.h>
 #include <systemlib/mixer/mixer_script_parser.h>
+#include <systemlib/mixer/mixer_factory.h>
 #include <systemlib/mixer/mixer_load.h>
 
 #include <systemlib/pwm_limit/pwm_limit.h>
@@ -123,11 +124,16 @@ public:
 	MixerTest();
 
 private:
+	bool mixerRoundTripDataTest();
 	bool mixerGroupFromDataTest();
 	bool mixerParserTest();
 	bool mixerJson11ParserTest();
 	bool mixerPicoJsonParserTest();
 	bool mixerBsonParserTest();
+
+	template<typename Tmix, typename Tdata>
+	bool
+	mixerRoundTripDataTestTemplate(Tmix *mix, Tdata *data);
 
 //	bool mixerTest();
 //	bool loadIOPass();
@@ -150,6 +156,7 @@ MixerTest::MixerTest() : UnitTest(),
 
 bool MixerTest::run_tests()
 {
+	ut_run_test(mixerRoundTripDataTest);
 	ut_run_test(mixerGroupFromDataTest);
 	ut_run_test(mixerParserTest);
 	ut_run_test(mixerJson11ParserTest);
@@ -192,6 +199,137 @@ ut_declare_test_c(test_mixer, MixerTest)
 //	return load_mixer(MIXER_PATH(complex_test.mix), 8);
 //}
 
+template<typename Tmix, typename Tdata>
+bool
+MixerTest::mixerRoundTripDataTestTemplate(Tmix *mix, Tdata *data)
+{
+	uint8_t mixdata[MIXER_BUFFER_SIZE];
+	int readsize;
+
+	readsize = mix->getMixerData(mixdata, MIXER_BUFFER_SIZE);
+
+	if (readsize  != sizeof(Tdata)) {
+		debug("Mixer add mixer data is unexpected size");
+		return false;
+	}
+
+	//Compare data with expected data
+	if (memcmp(data, mixdata, sizeof(Tdata)) != 0) {
+		debug("Add mixer data content is not as expected");
+
+		for (int i = 0; i < sizeof(Tdata); i++) {
+			printf("%x:%x ", ((uint8_t *) data)[i], mixdata[i]);
+		}
+
+		printf("\n");
+		return false;
+	}
+
+	// Create mixer with factory from data, clear data and read it back.
+	Mixer *mixer = MixerFactory::factory((mixer_base_header_s *) mixdata);
+	memset(&mixdata, 0, MIXER_BUFFER_SIZE);
+	readsize = mixer->getMixerData(mixdata, MIXER_BUFFER_SIZE);
+	delete mixer;
+
+	if (readsize != sizeof(Tdata)) {
+		debug("Add mixer recreate and readback data size is not as expected");
+		return false;
+	}
+
+	//Compare recreated data with expected data
+	if (memcmp(data, mixdata, sizeof(Tdata)) != 0) {
+		debug("Add mixer recreate data content is not as expected");
+		return false;
+	}
+
+	return true;
+}
+
+///* Create mixer object, generate data structures from them and then
+/// use factory to recreate the mixer object.  Regerneate the data and
+/// compare the result*/
+bool
+MixerTest::mixerRoundTripDataTest()
+{
+	mixer_data_operator_s oppdata;
+
+	//ADD
+	MixerAdd mixer_add({1, 2},
+	{3, 4},
+	{5, 6});
+
+	memset(&oppdata, 0, sizeof(oppdata));
+	oppdata.header.mixer_type = MIXER_TYPES_ADD;
+	oppdata.header.data_size = sizeof(mixer_data_operator_s);
+	oppdata.ref_left.group = 1;
+	oppdata.ref_left.index = 2;
+	oppdata.ref_right.group = 3;
+	oppdata.ref_right.index = 4;
+	oppdata.ref_out.group = 5;
+	oppdata.ref_out.index = 6;
+
+	if (!mixerRoundTripDataTestTemplate(&mixer_add, &oppdata)) {
+		return false;
+	}
+
+	//ADD CONST
+	mixer_register_val_u constval = {.floatval = 0.5};
+	MixerAddConst mixer_add_const({1, 2},
+				      constval,
+	{5, 6});
+
+	memset(&oppdata, 0, sizeof(oppdata));
+	oppdata.header.mixer_type = MIXER_TYPES_ADD_CONST;
+	oppdata.header.data_size = sizeof(mixer_data_operator_s);
+	oppdata.ref_right.group = 1;
+	oppdata.ref_right.index = 2;
+	oppdata.constval.floatval = 0.5;
+	oppdata.ref_out.group = 5;
+	oppdata.ref_out.index = 6;
+
+	if (!mixerRoundTripDataTestTemplate(&mixer_add_const, &oppdata)) {
+		return false;
+	}
+
+
+	//COPY
+	MixerCopy mixer_Copy({1, 2},
+	{5, 6});
+
+	memset(&oppdata, 0, sizeof(oppdata));
+	oppdata.header.mixer_type = MIXER_TYPES_COPY;
+	oppdata.header.data_size = sizeof(mixer_data_operator_s);
+	oppdata.ref_right.group = 1;
+	oppdata.ref_right.index = 2;
+	oppdata.ref_out.group = 5;
+	oppdata.ref_out.index = 6;
+
+	if (!mixerRoundTripDataTestTemplate(&mixer_Copy, &oppdata)) {
+		return false;
+	}
+
+	//MULTIPLY
+	MixerMultiply mixer_multiply({1, 2},
+	{3, 4},
+	{5, 6});
+
+	memset(&oppdata, 0, sizeof(oppdata));
+	oppdata.header.mixer_type = MIXER_TYPES_MULTIPLY;
+	oppdata.header.data_size = sizeof(mixer_data_operator_s);
+	oppdata.ref_left.group = 1;
+	oppdata.ref_left.index = 2;
+	oppdata.ref_right.group = 3;
+	oppdata.ref_right.index = 4;
+	oppdata.ref_out.group = 5;
+	oppdata.ref_out.index = 6;
+
+	if (!mixerRoundTripDataTestTemplate(&mixer_multiply, &oppdata)) {
+		return false;
+	}
+
+	return true;
+}
+
 // Tests behaviour of MixerGroup and MixerFactory when creating mixers from data
 bool MixerTest::mixerGroupFromDataTest()
 {
@@ -199,7 +337,7 @@ bool MixerTest::mixerGroupFromDataTest()
 	actuator_outputs_s outputs = {};
 	size_t num_outputs = 16;
 
-	uint8_t *mixbuff = (uint8_t *) malloc(MIXER_BUFFER_SIZE);
+	uint8_t mixbuff[MIXER_BUFFER_SIZE];
 	uint8_t *buffpos = mixbuff;
 
 	MixerRegisterGroups _reg_groups = MixerRegisterGroups();
@@ -308,7 +446,6 @@ bool MixerTest::mixerGroupFromDataTest()
 	expected_outputs.output[3] = 1.25;
 
 	memset(mixbuff, 0, MIXER_BUFFER_SIZE);
-	free(mixbuff);
 
 	if (mixer_group.count() != 4) {
 		debug("mixerGroupFromDataTest: MixerGroup has wrong mixer count");

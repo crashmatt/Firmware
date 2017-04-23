@@ -43,6 +43,7 @@
 #include <stdint.h>
 //#include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 
 #define debug(fmt, args...)	do { } while(0)
@@ -106,8 +107,8 @@ MixerAdd::getMixerData(uint8_t *buff, int len)
 		return -1;
 	}
 
+	memset(buff, 0, sizeof(mixer_data_operator_s));
 	mixer_data_operator_s *data = (mixer_data_operator_s *) buff;
-
 	data->header.mixer_type = MIXER_TYPES_ADD;
 	data->header.data_size = sizeof(mixer_data_operator_s);
 	data->ref_left = _left;
@@ -152,8 +153,8 @@ MixerAddConst::getMixerData(uint8_t *buff, int len)
 		return -1;
 	}
 
+	memset(buff, 0, sizeof(mixer_data_operator_s));
 	mixer_data_operator_s *data = (mixer_data_operator_s *) buff;
-
 	data->header.mixer_type = MIXER_TYPES_ADD_CONST;
 	data->header.data_size = sizeof(mixer_data_operator_s);
 	data->ref_right = _in;
@@ -213,8 +214,8 @@ MixerCopy::getMixerData(uint8_t *buff, int len)
 		return -1;
 	}
 
+	memset(buff, 0, sizeof(mixer_data_operator_s));
 	mixer_data_operator_s *data = (mixer_data_operator_s *) buff;
-
 	data->header.mixer_type = MIXER_TYPES_COPY;
 	data->header.data_size = sizeof(mixer_data_operator_s);
 	data->ref_right = _in;
@@ -274,8 +275,8 @@ MixerMultiply::getMixerData(uint8_t *buff, int len)
 		return -1;
 	}
 
+	memset(buff, 0, sizeof(mixer_data_operator_s));
 	mixer_data_operator_s *data = (mixer_data_operator_s *) buff;
-
 	data->header.mixer_type = MIXER_TYPES_MULTIPLY;
 	data->header.data_size = sizeof(mixer_data_operator_s);
 	data->ref_left = _left;
