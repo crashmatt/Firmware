@@ -59,24 +59,16 @@
 
 //#include "systemlib/uthash/utarray.h"
 
-extern "C" {
-#include "tinybson.h"   //Local copy has fixes for cpp
-//#include <systemlib/bson/tinybson.h>
-}
 
 #define PICOJSON_NO_EXCEPTIONS 1
 #define PICOJSON_FLOAT_PRECISION 10
 #include <lib/picojson/picojson.h>
 
-#include "json11.hpp"
-
-#include "mixer_json_parser.h"
+#include "mixer_script_parser.h"
 #include "mixer_data_parser.h"
 #include "mixer_data.h"
 
-using namespace json11;
 using std::string;
-
 
 //#define debug(fmt, args...)	do { } while(0)
 #define debug(fmt, args...)	do { printf("[mixer_data_parser] " fmt "\n", ##args); } while(0)
@@ -84,95 +76,6 @@ using std::string;
 #define UNUSED(x) (void)(x)
 #define MIXER_SCRIPT_MAX_LINE_LENGTH 120
 
-
-/****************************************************************************/
-
-
-
-
-/****************************************************************************/
-
-
-MixerJsonParser::MixerJsonParser(MixerDataParser *data_parser)
-	: _data_parser(nullptr)
-{
-}
-
-
-int
-MixerJsonParser::parse_json(char *buff, int len)
-{
-	UNUSED(len);
-	uint8_t mixdata[120];
-
-	if (_data_parser == nullptr) {
-		return -1;
-	}
-
-	mixer_datablock_header_s *blk_hdr = (mixer_datablock_header_s *) &mixdata;
-	blk_hdr->start = MIXER_DATABLOCK_START;
-
-	string err;
-	const auto json = Json::parse(buff, err);
-	std::cout <<  "error - " << err << "\n";
-
-	int param_count = 0;
-	int value_count = 0;
-	int group_count = 0;;
-
-	if (!json["mixer_config"].is_object()) {
-		std::cout << "not a json mixer configuration file" << std::endl;
-		return -1;
-	}
-
-	// Count the groups
-	if (json["mixer_config"]["groups"].is_array()) {
-		group_count = json["mixer_config"]["groups"].array_items().size();
-
-	} else {
-		std::cout << "groups not an array" << std::endl;
-		return -1;
-	}
-
-	// Count the parameters
-	if (json["mixer_config"]["parameters"].is_array()) {
-		for (auto &k : json["mixer_config"]["parameters"].array_items()) {
-			std::cout << "    - " << k.dump() << "\n";
-
-			if (k.is_object()) {
-				if (k["value"].is_number()) {
-					value_count++;
-
-				} else if (k["value"].is_array()) {
-					value_count += k["value"].array_items().size();
-				}
-
-			} else {
-				std::cout << "parameter item not an object" << std::endl;
-				return -1;
-			}
-
-			param_count++;
-		}
-
-		blk_hdr->type = MIXER_DATABLOCK_PARAMETERS;
-		blk_hdr->size = sizeof(mixer_parameters_s);
-		mixer_parameters_s *params = (mixer_parameters_s *) blk_hdr->data;
-		params->parameter_count = param_count;
-		params->parameter_value_count = value_count;
-		_data_parser->parse_buffer(mixdata, sizeof(mixer_datablock_header_s) + blk_hdr->size);
-
-	} else {
-		std::cout << "parameters not an array" << std::endl;
-		return -1;
-	}
-
-	std::cout  <<  "group_count:" << group_count
-		   <<  "  para_count:" << param_count
-		   << "   value_count:" << value_count << "\n";
-
-	return 0;
-}
 
 /****************************************************************************/
 
@@ -380,8 +283,17 @@ private:
 };
 }       //namespace
 
+
+/****************************************************************************/
+
+
+MixerPicoJsonParser::MixerPicoJsonParser(MixerDataParser *data_parser)
+	: MixerScriptParser(data_parser)
+{
+}
+
 int
-MixerJsonParser::parse_picojson(std::istream *is)
+MixerPicoJsonParser::parse_stream(std::istream *is)
 {
 	picojson::value out;
 	std::string err;
@@ -498,91 +410,3 @@ MixerJsonParser::parse_picojson(std::istream *is)
 
 	return 0;
 }
-
-/****************************************************************************/
-
-struct mixer_load_state {
-	bool mark_saved;
-};
-
-static int
-mixer_bson_parse_callback(bson_decoder_t decoder, void *priv, bson_node_t node)
-{
-//    float f;
-//    int32_t i;
-//    void *v = NULL;
-	void *tmp = NULL;
-	int result = -1;
-	struct mixer_load_state *state = (struct mixer_load_state *)priv;
-	UNUSED(state);
-
-	/*
-	 * EOO means the end of the parameter object. (Currently not supporting
-	 * nested BSON objects).
-	 */
-	if (node->type == BSON_EOO) {
-		debug("end of mixer file");
-		result = -1;
-		goto out;
-	}
-
-	/* don't return zero, that means EOF */
-	result = 1;
-
-out:
-
-	if (tmp != NULL) {
-		free(tmp);
-	}
-
-	return result;
-}
-
-
-
-int
-MixerJsonParser::parse_bson(int fd)
-{
-	UNUSED(fd);
-
-//    struct param_wbuf_s *s = NULL;
-
-	struct bson_decoder_s decoder;
-	int result = -1;
-	struct mixer_load_state state;
-
-	if (bson_decoder_init_file(&decoder, fd, mixer_bson_parse_callback, &state) != 0) {
-		debug("decoder init failed");
-		goto out;
-	}
-
-	state.mark_saved = false;
-
-	do {
-		result = bson_decoder_next(&decoder);
-
-	} while (result > 0);
-
-out:
-
-	if (result < 0) {
-		debug("BSON error decoding parameters");
-	}
-
-	return result;
-}
-
-
-
-
-//    char    *startln  = script;
-//    char    *endln  = script;
-
-//    while(*endln != 0){
-//        if(*endln == '\n'){
-////            _parse_line(startln);
-//            startln = endln + 1;
-//        }
-//        endln++;
-//    }
-//    UNUSED(startln);

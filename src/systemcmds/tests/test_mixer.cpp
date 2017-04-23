@@ -60,7 +60,7 @@
 #include <systemlib/err.h>
 #include <systemlib/mixer/mixers.h>
 #include <systemlib/mixer/mixer_data_parser.h>
-#include <systemlib/mixer/mixer_json_parser.h>
+#include <systemlib/mixer/mixer_script_parser.h>
 #include <systemlib/mixer/mixer_load.h>
 
 #include <systemlib/pwm_limit/pwm_limit.h>
@@ -128,6 +128,7 @@ private:
 	bool mixerJson11ParserTest();
 	bool mixerPicoJsonParserTest();
 	bool mixerBsonParserTest();
+
 //	bool mixerTest();
 //	bool loadIOPass();
 //	bool loadVTOL1Test();
@@ -152,8 +153,9 @@ bool MixerTest::run_tests()
 	ut_run_test(mixerGroupFromDataTest);
 	ut_run_test(mixerParserTest);
 	ut_run_test(mixerJson11ParserTest);
-	ut_run_test(mixerPicoJsonParserTest);
-//	ut_run_test(loadQuadTest);
+//	ut_run_test(mixerPicoJsonParserTest);
+
+	//	ut_run_test(loadQuadTest);
 //	ut_run_test(loadVTOL1Test);
 //	ut_run_test(loadVTOL2Test);
 //	ut_run_test(loadComplexTest);
@@ -594,7 +596,7 @@ bool MixerTest::mixerJson11ParserTest()
 
 	MixerDataParser mixparser = MixerDataParser(&mixer_group, &mixparams, &_reg_groups, &mixvars);
 
-	MixerJsonParser parser;
+	MixerJson11Parser parser;
 	parser.setDataParser(&mixparser);
 
 	FILE    *fp;
@@ -618,7 +620,9 @@ bool MixerTest::mixerJson11ParserTest()
 
 	buff[newLen] = '\0'; /* Just to be safe. */
 
-	parser.parse_json(buff, 2046);
+	if (parser.parse_buff(buff, 2046) < 0) {
+		return false;
+	}
 
 	return true;
 }
@@ -626,7 +630,7 @@ bool MixerTest::mixerJson11ParserTest()
 // tests behaviour of mixer parser when creating/setting data from data blocks
 bool MixerTest::mixerBsonParserTest()
 {
-//	MixerJsonParser parser;
+//	MixerBsonParser parser;
 //	int		fd;
 ////    FILE    *fp;
 
@@ -639,7 +643,7 @@ bool MixerTest::mixerBsonParserTest()
 //		return false;
 //	}
 
-//    parser.parse_bson(fd);
+//    parser.parse_fd(fd);
 
 //	close(fd);
 	return false;
@@ -648,7 +652,7 @@ bool MixerTest::mixerBsonParserTest()
 // tests behaviour of cjosn parser
 bool MixerTest::mixerPicoJsonParserTest()
 {
-	MixerJsonParser parser;
+	MixerPicoJsonParser parser;
 
 	/* open the mixer definition file */
 //	fd = open(MIXER_PATH(IO_pass.mix), O_RDONLY);
@@ -664,7 +668,9 @@ bool MixerTest::mixerPicoJsonParserTest()
 		return false;
 	}
 
-	parser.parse_picojson(&fs);
+	if (parser.parse_stream(&fs) < 0) {
+		return false;
+	}
 
 	return true;
 }

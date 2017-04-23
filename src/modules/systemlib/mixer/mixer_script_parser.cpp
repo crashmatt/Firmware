@@ -32,39 +32,31 @@
  ****************************************************************************/
 
 /**
- * @file mixer_json_parser.h
- *
- * Structure for holding resgisters which a mixer uses for input and output.
- * Holds structure information on regsiters so a mixer can validate correct registers
- * Supports mixer parameters for reporting register metadata
- */
-
-
-#ifndef _SYSTEMLIB_MIXER_JSON_PARSER_H
-#define _SYSTEMLIB_MIXER_JSON_PARSER_H value
-
-
-class MixerDataParser;
-#include <istream>
-
-/**
- * Class responsible for parsing mixer script into data objects consumed by MixerDataParser
+ * @file mixer_script_parser.cpp
  *
  */
-class __EXPORT MixerJsonParser
+
+
+
+//#include <iostream>
+#include <string>
+#include <vector>
+#include <iostream>
+#include <iterator>
+#include <stdint.h>
+
+#include <cstdio>
+#include <cstring>
+
+//#include "systemlib/uthash/utarray.h"
+
+#include "mixer_script_parser.h"
+
+
+/****************************************************************************/
+
+MixerScriptParser::MixerScriptParser(MixerDataParser *data_parser)
+	: _data_parser(data_parser)
 {
-public:
-	MixerJsonParser(MixerDataParser *data_parser = nullptr);
 
-	void setDataParser(MixerDataParser *data_parser) {_data_parser = data_parser;}
-	int parse_bson(int fd);
-	int parse_json(char *buff, int len);
-	int parse_picojson(std::istream *is);
-
-protected:
-	int _parse_line(char *line);
-	MixerDataParser             *_data_parser;
-};
-
-
-#endif  //_SYSTEMLIB_MIXER_JSON_PARSER_H
+}

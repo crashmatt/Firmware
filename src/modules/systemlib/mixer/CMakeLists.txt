@@ -54,8 +54,11 @@ px4_add_module(
                 mixer_factory.cpp
                 mixer_parameters.cpp
                 mixer_data_parser.cpp
-                mixer_json_parser.cpp
-	DEPENDS
+                mixer_script_parser.cpp
+                mixer_picojson_parser.cpp
+                mixer_bson_parser.cpp
+                mixer_json11_parser.cpp
+        DEPENDS
 		platforms__common
 #		mixer_gen
 	)
