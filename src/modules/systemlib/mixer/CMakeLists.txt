@@ -40,6 +40,8 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 #add_custom_target(mixer_gen
 #	DEPENDS mixer_multirotor.generated.h multi_tables.py)
 
+add_definitions( -DJSON11_NO_FLOAT_COMPARE_ERROR )
+
 px4_add_module(
 	MODULE modules__systemlib__mixer
 	SRCS

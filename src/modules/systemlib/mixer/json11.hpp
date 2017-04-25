@@ -236,4 +236,5 @@ protected:
 	virtual ~JsonValue() {}
 };
 
+
 } // namespace json11

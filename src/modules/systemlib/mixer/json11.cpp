@@ -26,6 +26,16 @@
 #include <cstdio>
 #include <limits>
 
+#if defined(JSON11_NO_FLOAT_COMPARE_ERROR)
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wfloat-equal"
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
+#endif
+
 namespace json11
 {
 
@@ -192,8 +202,10 @@ protected:
 	}
 
 	// Comparisons
-	bool equals(const JsonValue *other) const override {return false;}
-
+	bool equals(const JsonValue *other) const override
+	{
+		return m_value == static_cast<const Value<tag, T> *>(other)->m_value;
+	}
 	bool less(const JsonValue *other) const override
 	{
 		return m_value < static_cast<const Value<tag, T> *>(other)->m_value;
@@ -203,44 +215,11 @@ protected:
 	void dump(string &out) const override { json11::dump(m_value, out); }
 };
 
-
-
-//template <Json::Type tag, typename T>
-//class Value<Json::Type, double>  : public JsonValue {
-//protected:
-
-//    // Constructors
-//    explicit Value(const T &value) : m_value(value) {}
-//    explicit Value(T &&value)      : m_value(move(value)) {}
-
-//    // Get type tag
-//    Json::Type type() const override {
-//        return tag;
-//    }
-
-//    // Comparisons
-//    bool equals(const JsonValue * other) const override {
-//        return false;
-//    }
-//    bool less(const JsonValue * other) const override {
-//        return m_value < static_cast<const Value<tag, T> *>(other)->m_value;
-//    }
-
-//    const T m_value;
-//    void dump(string &out) const override { json11::dump(m_value, out); }
-//};
-
-inline bool approximatelyEqual(double a, double b, double epsilon)
-{
-	return fabs(a - b) <= ((fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * epsilon);
-}
-
-
 class JsonDouble final : public Value<Json::NUMBER, double>
 {
 	double number_value() const override { return m_value; }
 	int int_value() const override { return static_cast<int>(m_value); }
-	bool equals(const JsonValue *other) const override { return approximatelyEqual(m_value, other->number_value(), 0.0001);}
+	bool equals(const JsonValue *other) const override { return m_value == other->number_value(); }
 	bool less(const JsonValue *other)   const override { return m_value <  other->number_value(); }
 public:
 	explicit JsonDouble(double value) : Value(value) {}
@@ -250,7 +229,7 @@ class JsonInt final : public Value<Json::NUMBER, int>
 {
 	double number_value() const override { return m_value; }
 	int int_value() const override { return m_value; }
-	bool equals(const JsonValue *other) const override { return (int) m_value == (int) other->number_value(); }
+	bool equals(const JsonValue *other) const override { return m_value == other->number_value(); }
 	bool less(const JsonValue *other)   const override { return m_value <  other->number_value(); }
 public:
 	explicit JsonInt(int value) : Value(value) {}
@@ -979,3 +958,12 @@ bool Json::has_shape(const shape &types, string &err) const
 }
 
 } // namespace json11
+
+#if defined(JSON11_NO_FLOAT_COMPARE_ERROR)
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic pop
+#endif
+
+#endif
