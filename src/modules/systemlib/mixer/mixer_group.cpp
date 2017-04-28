@@ -51,9 +51,11 @@
 //#include <debug.h>
 //#define debug(fmt, args...)	syslog(fmt "\n", ##args)
 
-MixerGroup::MixerGroup(MixerRegisterGroups *reg_groups)
+MixerGroup::MixerGroup()
 	: _first(nullptr)
-	, _reg_groups(reg_groups)
+	, _reg_groups()
+	, _parameters()
+	, _variables()
 {
 }
 
@@ -62,11 +64,11 @@ MixerGroup::~MixerGroup()
 	reset();
 }
 
-int
+void
 MixerGroup::append_mixer(Mixer *mixer)
 {
 	if (mixer == nullptr) {
-		return -1;
+		return;
 	}
 
 	Mixer **mpp;
@@ -79,50 +81,6 @@ MixerGroup::append_mixer(Mixer *mixer)
 
 	*mpp = mixer;
 	mixer->_next = nullptr;
-	return 0;
-}
-
-
-
-int
-MixerGroup::from_buffer(uint8_t *mixbuff, int bufflen)
-{
-	Mixer *new_mixer = MixerFactory::factory((mixer_base_header_s *) mixbuff);
-
-	if (new_mixer == nullptr) {
-		return -1;
-	}
-
-	append_mixer(new_mixer);
-
-	return 0;
-}
-
-
-int
-MixerGroup::to_buffer(uint8_t *mixbuff, int bufflen)
-{
-//	int data_size;
-//	int buffpos = 0;
-//	Mixer *mix = _first;
-//	mixer_base_header_s *mixheader;
-
-//	while (mix != nullptr) {
-//		mixheader = mix->getMixerData();
-//		data_size = mixheader->data_size;
-
-//		//Check for buffer overflow
-//		if ((buffpos + data_size) >= bufflen) {
-//			return -1;
-//		}
-
-//		memcpy(&mixbuff[buffpos], mixheader, data_size);
-//		buffpos += data_size;
-//		mix = mix->_next;
-//	}
-
-//	return buffpos;
-	return -1;
 }
 
 
@@ -132,12 +90,8 @@ MixerGroup::check_mixers_valid()
 	Mixer *mix = _first;
 	int index = 0;
 
-	if (_reg_groups == nullptr) {
-		return 0;
-	}
-
 	while (mix != nullptr) {
-		if (mix->mixerValid(_reg_groups) == false) {
+		if (mix->mixerValid(&_reg_groups) == false) {
 			return -1 - index ;
 		}
 
@@ -171,12 +125,8 @@ MixerGroup::mix_group()
 {
 	Mixer	*mixer = _first;
 
-	if (_reg_groups == nullptr) {
-		return 0;
-	}
-
 	while (mixer != nullptr) {
-		mixer->mix(_reg_groups);
+		mixer->mix(&_reg_groups);
 		mixer = mixer->_next;
 	}
 

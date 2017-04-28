@@ -287,8 +287,8 @@ private:
 /****************************************************************************/
 
 
-MixerPicoJsonParser::MixerPicoJsonParser(MixerDataParser *data_parser)
-	: MixerScriptParser(data_parser)
+MixerPicoJsonParser::MixerPicoJsonParser(MixerGroup *mixer_group)
+	: MixerScriptParser(mixer_group)
 {
 }
 

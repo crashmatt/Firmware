@@ -38,6 +38,7 @@
  */
 
 #include "mixer_operators.h"
+#include "mixer_types.h"
 
 #include <sys/types.h>
 #include <stdint.h>

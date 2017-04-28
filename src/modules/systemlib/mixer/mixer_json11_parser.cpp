@@ -62,15 +62,16 @@
 #include "json11.hpp"
 
 #include "mixer_script_parser.h"
-#include "mixer_data_parser.h"
-#include "mixer_data.h"
+#include "mixer.h"
+#include "mixer_parameters.h"
+#include "mixer_variables.h"
 
 using namespace json11;
 using std::string;
 
 
 //#define debug(fmt, args...)	do { } while(0)
-#define debug(fmt, args...)	do { printf("[mixer_data_parser] " fmt "\n", ##args); } while(0)
+#define debug(fmt, args...)	do { printf("[mixer_json11_parser] " fmt "\n", ##args); } while(0)
 
 #define UNUSED(x) (void)(x)
 
@@ -78,8 +79,8 @@ using std::string;
 
 /****************************************************************************/
 
-MixerJson11Parser::MixerJson11Parser(MixerDataParser *data_parser)
-	: MixerScriptParser(data_parser)
+MixerJson11Parser::MixerJson11Parser(MixerGroup *mixer_group)
+	: MixerScriptParser(mixer_group)
 {
 }
 
@@ -88,15 +89,14 @@ int
 MixerJson11Parser::parse_buff(char *buff, int len)
 {
 	UNUSED(len);
-	uint8_t mixdata[120];
+//	uint8_t mixdata[120];
 
-	if (_data_parser == nullptr) {
-		std::cout << "no data parser set" << std::endl;
+	MixerParameters *params = _mixer_group->getParameters();
+
+	if (params == nullptr) {
+		debug("mixer group params is null");
 		return -1;
 	}
-
-	mixer_datablock_header_s *blk_hdr = (mixer_datablock_header_s *) &mixdata;
-	blk_hdr->start = MIXER_DATABLOCK_START;
 
 	string err;
 	const auto json = Json::parse(buff, err);
@@ -107,7 +107,7 @@ MixerJson11Parser::parse_buff(char *buff, int len)
 	int group_count = 0;;
 
 	if (!json["mixer_config"].is_object()) {
-		std::cout << "not a json mixer configuration file" << std::endl;
+		debug("not a json mixer configuration file");
 		return -1;
 	}
 
@@ -116,46 +116,41 @@ MixerJson11Parser::parse_buff(char *buff, int len)
 		group_count = json["mixer_config"]["groups"].array_items().size();
 
 	} else {
-		std::cout << "groups not an array" << std::endl;
+		debug("groups not an array");
 		return -1;
 	}
 
 	// Count the parameters
-	if (json["mixer_config"]["parameters"].is_array()) {
-		for (auto &k : json["mixer_config"]["parameters"].array_items()) {
-			std::cout << "    - " << k.dump() << "\n";
+	if (!json["mixer_config"]["parameters"].is_array()) {
+		debug("parameters not an array");
+		return -1;
+	}
 
-			if (k.is_object()) {
-				if (k["value"].is_number()) {
-					value_count++;
+	for (auto &k : json["mixer_config"]["parameters"].array_items()) {
+		std::cout << "    - " << k.dump() << "\n";
 
-				} else if (k["value"].is_array()) {
-					value_count += k["value"].array_items().size();
-				}
+		if (k.is_object()) {
+			if (k["value"].is_number()) {
+				value_count++;
 
-			} else {
-				std::cout << "parameter item not an object" << std::endl;
-				return -1;
+			} else if (k["value"].is_array()) {
+				value_count += k["value"].array_items().size();
 			}
 
-			param_count++;
+		} else {
+			debug("parameter item not an object");
+			return -1;
 		}
 
-		blk_hdr->type = MIXER_DATABLOCK_PARAMETERS;
-		blk_hdr->size = sizeof(mixer_parameters_s);
-		mixer_parameters_s *params = (mixer_parameters_s *) blk_hdr->data;
-		params->parameter_count = param_count;
-		params->parameter_value_count = value_count;
-		_data_parser->parse_buffer(mixdata, sizeof(mixer_datablock_header_s) + blk_hdr->size);
-
-	} else {
-		std::cout << "parameters not an array" << std::endl;
-		return -1;
+		param_count++;
 	}
 
 	std::cout  <<  "group_count:" << group_count
 		   <<  "  para_count:" << param_count
 		   << "   value_count:" << value_count << "\n";
+
+	params->setParamsSize(param_count, value_count);
+
 
 	return 0;
 }

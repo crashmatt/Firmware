@@ -40,20 +40,33 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <cstdio>
 
 #include "mixer_parameters.h"
+
+//#define debug(fmt, args...)	do { } while(0)
+#define debug(fmt, args...)	do { printf("[mixer_parameters] " fmt "\n", ##args); } while(0)
 
 /****************************************************************************/
 
 MixerParameters::MixerParameters()
-	: _params( {0, 0})
-, _param_values(nullptr)
-, _metadata(nullptr)
+	: _param_count(0)
+	, _value_count(0)
+	, _param_values(nullptr)
+#if !defined(MIXER_REMOTE)
+	, _metadata(nullptr)
+#endif //!MIXER_REMOTE
 {
 }
 
 
 MixerParameters::~MixerParameters()
+{
+	reset();
+}
+
+void
+MixerParameters::reset()
 {
 	if (_param_values != nullptr) {
 		free(_param_values);
@@ -65,17 +78,22 @@ MixerParameters::~MixerParameters()
 }
 
 int
-MixerParameters::setParamsSize(mixer_parameters_s *param_sizes)
+MixerParameters::setParamsSize(int param_count, int value_count)
 {
 	//Only allow setting of size once
 	if (_param_values != nullptr) {
 		return -1;
 	}
 
-	_params = *param_sizes;
+	debug("Setting parameters size to count:%d values:%d", param_count, value_count);
+
+	_param_count = param_count;
+	_value_count =  value_count;
 
 	// Create parameter values in heap
-	int param_data_size = _params.parameter_value_count * sizeof(mixer_register_val_u);
+	int param_data_size = _value_count * sizeof(mixer_register_val_u);
+
+	debug("Allocating parameter data area of %d bytes", param_data_size);
 	_param_values = (mixer_register_val_u *) malloc(param_data_size);
 
 	if (_param_values == nullptr) {
@@ -86,7 +104,7 @@ MixerParameters::setParamsSize(mixer_parameters_s *param_sizes)
 
 	// If not a remote mxer then add a container for parameter metadata
 #if !defined(MIXER_REMOTE)
-	param_data_size = _params.parameter_count * sizeof(mixer_parameter_metadata_s);
+	param_data_size = _param_count * sizeof(mixer_parameter_metadata_s);
 	_metadata = (mixer_parameter_metadata_s *) malloc(param_data_size);
 
 	if (_metadata == nullptr) {
@@ -102,7 +120,7 @@ MixerParameters::setParamsSize(mixer_parameters_s *param_sizes)
 int
 MixerParameters::setValues(mixer_param_values_s *values)
 {
-	if ((values->value_index + values->value_count) > _params.parameter_value_count) {
+	if ((values->value_index + values->value_count) > _value_count) {
 		return -1;
 	}
 
@@ -119,7 +137,7 @@ MixerParameters::setParamMetaData(mixer_parameter_metadata_s *metadata)
 		return -1;
 	}
 
-	if (metadata->param_index < _params.parameter_count) {
+	if (metadata->param_index < _param_count) {
 		_metadata[metadata->param_index] = *metadata;
 	}
 

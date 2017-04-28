@@ -42,6 +42,7 @@
 #define _SYSTEMLIB_MIXER_FUNCTIONS_H value
 
 #include "mixer.h"
+#include "mixer_types.h"
 
 /****************************************************************************/
 

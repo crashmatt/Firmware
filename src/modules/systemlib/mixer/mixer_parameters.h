@@ -53,17 +53,25 @@ public:
 	MixerParameters();
 	~MixerParameters();
 
-	int setParamsSize(mixer_parameters_s *param_sizes);
+	void reset(void);
+	int setParamsSize(int param_count, int value_count);
 	int setValues(mixer_param_values_s *values);
-	int setParamMetaData(mixer_parameter_metadata_s *metadata);
-	uint16_t valueCount() {return _params.parameter_value_count;}
-	uint16_t paramCount() {return _params.parameter_count;}
+	int valueCount() {return _value_count;}
+	int paramCount() {return _param_count;}
 	mixer_register_val_u *paramValues() {return _param_values;}
 
+#if !defined(MIXER_REMOTE)
+	int setParamMetaData(mixer_parameter_metadata_s *metadata);
+#endif //!MIXER_REMOTE
+
 protected:
-	mixer_parameters_s     _params;
+	int                    _param_count;
+	int                     _value_count;
 	mixer_register_val_u   *_param_values;
+
+#if !defined(MIXER_REMOTE)
 	mixer_parameter_metadata_s  *_metadata;
+#endif
 };
 
 #endif

@@ -50,6 +50,8 @@ class MixerParameters;
 class MixerRegisterGroups;
 class MixerVariables;
 
+#include "mixer_data.h"
+
 /****************************************************************************/
 // Mixer datablock structures
 
@@ -83,16 +85,13 @@ __attribute__((packed))
 class __EXPORT MixerDataParser
 {
 public:
-	MixerDataParser(MixerGroup *mix_group, MixerParameters *mix_params, MixerRegisterGroups *mix_regs,
-			MixerVariables *mix_vars);
+	MixerDataParser(MixerGroup *mix_group);
 
 	int parse_buffer(uint8_t *buff, int bufflen);
+	int mixer_from_buffer(mixer_base_header_s *mixdata, int datasize);
 
 protected:
 	MixerGroup          *_mix_group;
-	MixerParameters     *_mix_params;
-	MixerRegisterGroups *_mix_regs;
-	MixerVariables      *_mix_vars;
 };
 
 #endif  //_SYSTEMLIB_MIXER_DATAPARSER_H

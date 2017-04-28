@@ -86,8 +86,10 @@
 
 #include "mixer_config.h"
 
+#include "mixer_data.h"
 #include "mixer_registers.h"
-#include "mixer_types.h"
+#include "mixer_parameters.h"
+#include "mixer_variables.h"
 
 /****************************************************************************/
 
@@ -199,7 +201,7 @@ private:
 class __EXPORT MixerGroup
 {
 public:
-	MixerGroup(MixerRegisterGroups *reg_groups = nullptr);
+	MixerGroup();
 	~MixerGroup();
 
 	uint16_t get_saturation_status(void);
@@ -232,45 +234,10 @@ public:
 	 * Adds a mixer to the group
 	 *
 	 * @param mixer     mixer to add to the list
-	 * @return          Zero on successful load, nonzero otherwise.
 	 */
-	int append_mixer(Mixer *mixer);
-
-
-	/**
-	 * Set the reference to mixer regsiter object used by the mixer
-	 *
-	 * @param reg_groups     reference to MixerRegisterGroups object
-	 */
-	void setRegGroups(MixerRegisterGroups *reg_groups) {_reg_groups = reg_groups;}
-
-
-	/**
-	 * Create new mixer(s) from a data buffer and adds them into a MixerGroup.
-	 * Does not take ownership of the buffer.  Copies buffer to new mixer data structure
-	 * ownder by mixer created by factory.
-	 * Supports streamed buffer with partial mixer data by returning the reminaing
-	 * unused bytes in the buffer
-	 *
-	 * @param[in]   group       MixerGroup object to put parsed mixers in.
-	 * @param[in]   mixbuff     mixer data buffer describing all mixers
-	 * @param[in]   bufflen     buffer length.
-	 * @return                  Remaining buffer length not used.
-	 */
-	int from_buffer(uint8_t *mixbuff, int bufflen);
-
-	//	void setMixRegsGroup(MixerRegisterGroups *reg_groups) {_reg_groups = reg_groups;}
+	void append_mixer(Mixer *mixer);
 
 #if !defined(MIXER_REMOTE)
-
-	/**
-	 * Copy all mixer data in sequence to a referenced buffer
-	 *
-	 * @param       mixbuff     buffer to put data
-	 * @param[in]   bufflen     Buffer length available.
-	 * @return                  Buffer length used. -1 if buffer overflowed.
-	 */
-	int to_buffer(uint8_t *mixbuff, int bufflen);
 
 	/**
 	* @brief                   Get the value of a mixer parameter
@@ -308,10 +275,16 @@ public:
 	 */
 	int16_t        group_set_param_value(int16_t index, int16_t arrayIndex, float value);
 
-private:
-	Mixer				*_first;	/**< linked list of mixers */
+	MixerRegisterGroups *getRegisterGroups() {return &_reg_groups;}
+	MixerParameters *getParameters() {return &_parameters;}
+	MixerVariables *getVariables() {return &_variables;}
 
-	MixerRegisterGroups             *_reg_groups;
+private:
+	Mixer                   *_first;	/**< linked list of mixers */
+	MixerRegisterGroups     _reg_groups;
+	MixerParameters         _parameters;
+	MixerVariables          _variables;
+
 	/* do not allow to copy due to pointer data members */
 	MixerGroup(const MixerGroup &);
 	MixerGroup operator=(const MixerGroup &);

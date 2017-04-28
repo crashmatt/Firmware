@@ -41,7 +41,7 @@
 #define _SYSTEMLIB_MIXER_SCRIPT_PARSER_H value
 
 
-class MixerDataParser;
+class MixerGroup;
 #include <istream>
 
 #ifndef MIXER_SCRIPT_MAX_LINE_LENGTH
@@ -55,15 +55,14 @@ class MixerDataParser;
 class __EXPORT MixerScriptParser
 {
 public:
-	MixerScriptParser(MixerDataParser *data_parser = nullptr);
+	MixerScriptParser(MixerGroup *mixer_group);
 
-	void setDataParser(MixerDataParser *data_parser) {_data_parser = data_parser;}
 	virtual int parse_fd(int fd) {return -1;}
 	virtual int parse_buff(char *buff, int len) {return -1;}
 	virtual int parse_stream(std::istream *is) {return -1;}
 
 protected:
-	MixerDataParser             *_data_parser;
+	MixerGroup                  *_mixer_group;
 };
 
 /**
@@ -73,7 +72,7 @@ protected:
 class __EXPORT MixerJson11Parser : public MixerScriptParser
 {
 public:
-	MixerJson11Parser(MixerDataParser *data_parser = nullptr);
+	MixerJson11Parser(MixerGroup *mixer_group);
 
 	int parse_buff(char *buff, int len);
 };
@@ -86,9 +85,8 @@ public:
 class __EXPORT MixerBsonParser : public MixerScriptParser
 {
 public:
-	MixerBsonParser(MixerDataParser *data_parser = nullptr);
+	MixerBsonParser(MixerGroup *mixer_group);
 
-	void setDataParser(MixerDataParser *data_parser) {_data_parser = data_parser;}
 	int parse_fd(int fd);
 };
 
@@ -100,9 +98,8 @@ public:
 class __EXPORT MixerPicoJsonParser : public MixerScriptParser
 {
 public:
-	MixerPicoJsonParser(MixerDataParser *data_parser = nullptr);
+	MixerPicoJsonParser(MixerGroup *mixer_group);
 
-	void setDataParser(MixerDataParser *data_parser) {_data_parser = data_parser;}
 	int parse_stream(std::istream *is);
 };
 

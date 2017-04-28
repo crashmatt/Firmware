@@ -150,7 +150,7 @@ private:
 };
 
 MixerTest::MixerTest() : UnitTest(),
-	mixer_group(nullptr)
+	mixer_group()
 {
 }
 
@@ -340,14 +340,14 @@ bool MixerTest::mixerGroupFromDataTest()
 	uint8_t mixbuff[MIXER_BUFFER_SIZE];
 	uint8_t *buffpos = mixbuff;
 
-	MixerRegisterGroups _reg_groups = MixerRegisterGroups();
-	mixer_group.setRegGroups(&_reg_groups);
+	MixerDataParser     dparser(&mixer_group);
+	MixerRegisterGroups *reg_groups = mixer_group.getRegisterGroups();
 	mixer_group.reset();
 
-	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_0].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+	reg_groups->register_groups[MixerRegisterGroups::REGS_CONTROL_0].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
 			(mixer_register_val_u *) _controls[0].control, true);
 
-	_reg_groups.register_groups[MixerRegisterGroups::REGS_OUTPUTS].setGroup(actuator_outputs_s::NUM_ACTUATOR_OUTPUTS,
+	reg_groups->register_groups[MixerRegisterGroups::REGS_OUTPUTS].setGroup(actuator_outputs_s::NUM_ACTUATOR_OUTPUTS,
 			(mixer_register_val_u *) outputs.output, false);
 
 	mixer_data_operator_s *oppdata = (mixer_data_operator_s *) buffpos;
@@ -384,7 +384,7 @@ bool MixerTest::mixerGroupFromDataTest()
 	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata->ref_out.index = 0;
 
-	if (mixer_group.from_buffer(mixbuff, sizeof(mixer_data_operator_s)) == -1) {
+	if (dparser.mixer_from_buffer((mixer_base_header_s *) mixbuff, sizeof(mixer_data_operator_s)) != -1) {
 		return false;
 	}
 
@@ -402,7 +402,7 @@ bool MixerTest::mixerGroupFromDataTest()
 	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata->ref_out.index = 1;
 
-	if (mixer_group.from_buffer(mixbuff, sizeof(mixer_data_operator_s)) == -1) {
+	if (dparser.mixer_from_buffer((mixer_base_header_s *) mixbuff, sizeof(mixer_data_operator_s)) != -1) {
 		return false;
 	}
 
@@ -420,7 +420,7 @@ bool MixerTest::mixerGroupFromDataTest()
 	oppdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppdata->ref_out.index = 2;
 
-	if (mixer_group.from_buffer(mixbuff, sizeof(mixer_data_operator_s)) == -1) {
+	if (dparser.mixer_from_buffer((mixer_base_header_s *) mixbuff, sizeof(mixer_data_operator_s)) != -1) {
 		return false;
 	}
 
@@ -438,7 +438,7 @@ bool MixerTest::mixerGroupFromDataTest()
 	oppcdata->ref_out.group = MixerRegisterGroups::REGS_OUTPUTS;
 	oppcdata->ref_out.index = 3;
 
-	if (mixer_group.from_buffer(mixbuff, sizeof(mixer_data_operator_s)) == -1) {
+	if (dparser.mixer_from_buffer((mixer_base_header_s *) mixbuff, sizeof(mixer_data_operator_s)) != -1) {
 		return false;
 	}
 
@@ -469,6 +469,9 @@ bool MixerTest::mixerGroupFromDataTest()
 		}
 	}
 
+//    debug("Expected count : %d", expected_count);
+//    debug("Expected output : %f", expected_outputs.output[0]);
+
 	return true;
 }
 
@@ -479,23 +482,26 @@ bool MixerTest::mixerParserTest()
 	actuator_outputs_s outputs = {};
 	size_t num_outputs = 8;
 
-	MixerRegisterGroups _reg_groups = MixerRegisterGroups();
-	mixer_group.setRegGroups(&_reg_groups);
+	MixerDataParser     mixparser(&mixer_group);
+	MixerRegisterGroups *reg_groups = mixer_group.getRegisterGroups();
+	MixerParameters     *mixparams   = mixer_group.getParameters();
+	MixerVariables      *mixvars     = mixer_group.getVariables();
+
 	mixer_group.reset();
 
-	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_0].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+	reg_groups->register_groups[MixerRegisterGroups::REGS_CONTROL_0].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
 			(mixer_register_val_u *) _controls[0].control, true);
 
-	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_1].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+	reg_groups->register_groups[MixerRegisterGroups::REGS_CONTROL_1].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
 			(mixer_register_val_u *) _controls[1].control, true);
 
-	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_2].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+	reg_groups->register_groups[MixerRegisterGroups::REGS_CONTROL_2].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
 			(mixer_register_val_u *) _controls[2].control, true);
 
-	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_3].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+	reg_groups->register_groups[MixerRegisterGroups::REGS_CONTROL_3].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
 			(mixer_register_val_u *) _controls[3].control, true);
 
-	_reg_groups.register_groups[MixerRegisterGroups::REGS_OUTPUTS].setGroup(actuator_outputs_s::NUM_ACTUATOR_OUTPUTS,
+	reg_groups->register_groups[MixerRegisterGroups::REGS_OUTPUTS].setGroup(actuator_outputs_s::NUM_ACTUATOR_OUTPUTS,
 			(mixer_register_val_u *) outputs.output, false);
 
 	debug("size of Mixer:%u", sizeof(Mixer));
@@ -507,10 +513,7 @@ bool MixerTest::mixerParserTest()
 
 	uint8_t *mixbuff = (uint8_t *) malloc(256);
 
-	MixerParameters mixparams   = MixerParameters();
-	MixerVariables  mixvars     = MixerVariables();
 
-	MixerDataParser mixparser = MixerDataParser(&mixer_group, &mixparams, &_reg_groups, &mixvars);
 	mixer_datablock_header_s *hdr = (mixer_datablock_header_s *) mixbuff;
 
 	int expected_mixer_count = 0;
@@ -526,8 +529,8 @@ bool MixerTest::mixerParserTest()
 	mixparser.parse_buffer(mixbuff, sizeof(mixer_datablock_header_s) + hdr->size);
 
 	debug("Assign varraibles to register group");
-	_reg_groups.register_groups[MixerRegisterGroups::REGS_VARIABLES].setGroup(mixvars.count(),
-			mixvars.variables(), false);
+	reg_groups->register_groups[MixerRegisterGroups::REGS_VARIABLES].setGroup(mixvars->count(),
+			mixvars->variables(), false);
 
 
 	// Create parameters datablock
@@ -558,8 +561,8 @@ bool MixerTest::mixerParserTest()
 	// Assign parameters to parameter register group
 
 	debug("Assign params to param register group");
-	_reg_groups.register_groups[MixerRegisterGroups::REGS_PARAMS].setGroup(mixparams.paramCount(),
-			mixparams.paramValues(), true);
+	reg_groups->register_groups[MixerRegisterGroups::REGS_PARAMS].setGroup(mixparams->paramCount(),
+			mixparams->paramValues(), true);
 
 	// Create parameter metadata datablock
 	hdr = (mixer_datablock_header_s *) mixbuff;
@@ -709,32 +712,28 @@ bool MixerTest::mixerJson11ParserTest()
 	actuator_controls_s _controls[actuator_controls_s::NUM_ACTUATOR_CONTROL_GROUPS];
 	actuator_outputs_s outputs = {};
 
-	MixerRegisterGroups _reg_groups = MixerRegisterGroups();
-	mixer_group.setRegGroups(&_reg_groups);
+	MixerRegisterGroups *reg_groups = mixer_group.getRegisterGroups();
+//    MixerParameters     *mixparams   = mixer_group.getParameters();
+//    MixerVariables      *mixvars     = mixer_group.getVariables();
+
 	mixer_group.reset();
 
-	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_0].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+	reg_groups->register_groups[MixerRegisterGroups::REGS_CONTROL_0].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
 			(mixer_register_val_u *) _controls[0].control, true);
 
-	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_1].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+	reg_groups->register_groups[MixerRegisterGroups::REGS_CONTROL_1].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
 			(mixer_register_val_u *) _controls[1].control, true);
 
-	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_2].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+	reg_groups->register_groups[MixerRegisterGroups::REGS_CONTROL_2].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
 			(mixer_register_val_u *) _controls[2].control, true);
 
-	_reg_groups.register_groups[MixerRegisterGroups::REGS_CONTROL_3].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
+	reg_groups->register_groups[MixerRegisterGroups::REGS_CONTROL_3].setGroup(actuator_controls_s::NUM_ACTUATOR_CONTROLS,
 			(mixer_register_val_u *) _controls[3].control, true);
 
-	_reg_groups.register_groups[MixerRegisterGroups::REGS_OUTPUTS].setGroup(actuator_outputs_s::NUM_ACTUATOR_OUTPUTS,
+	reg_groups->register_groups[MixerRegisterGroups::REGS_OUTPUTS].setGroup(actuator_outputs_s::NUM_ACTUATOR_OUTPUTS,
 			(mixer_register_val_u *) outputs.output, false);
 
-	MixerParameters mixparams   = MixerParameters();
-	MixerVariables  mixvars     = MixerVariables();
-
-	MixerDataParser mixparser = MixerDataParser(&mixer_group, &mixparams, &_reg_groups, &mixvars);
-
-	MixerJson11Parser parser;
-	parser.setDataParser(&mixparser);
+	MixerJson11Parser parser(&mixer_group);
 
 	FILE    *fp;
 	char    buff[2048];
@@ -789,7 +788,7 @@ bool MixerTest::mixerBsonParserTest()
 // tests behaviour of cjosn parser
 bool MixerTest::mixerPicoJsonParserTest()
 {
-	MixerPicoJsonParser parser;
+	MixerPicoJsonParser parser(&mixer_group);
 
 	/* open the mixer definition file */
 //	fd = open(MIXER_PATH(IO_pass.mix), O_RDONLY);

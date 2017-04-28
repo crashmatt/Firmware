@@ -55,8 +55,8 @@
 
 /****************************************************************************/
 
-MixerScriptParser::MixerScriptParser(MixerDataParser *data_parser)
-	: _data_parser(data_parser)
+MixerScriptParser::MixerScriptParser(MixerGroup *mixer_group)
+	: _mixer_group(mixer_group)
 {
 
 }
